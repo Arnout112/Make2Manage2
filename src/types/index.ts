@@ -73,8 +73,8 @@ export interface Customer {
 export type CustomerFilter = 'all' | 'completed' | 'rejected' | 'high-priority' | 'rush-orders' | 'by-customer'
 export type OrderPriority = 'low' | 'normal' | 'high' | 'urgent'
 export type StatisticsFilter = 'order-doorlooptijd' | 'doorlooptijd-per-werkplek' | 'orderdoorlooptijd-per-afdeling'
-export type ScreenType = 'landing' | 'game' | 'analytics'
-export type NavigationScreen = 'game' | 'analytics'
+export type ScreenType = 'landing' | 'game' | 'analytics' | 'manual-game'
+export type NavigationScreen = 'game' | 'analytics' | 'manual-game'
 
 // Game Session Management
 export interface GameSession {

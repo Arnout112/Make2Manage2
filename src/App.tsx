@@ -1,7 +1,7 @@
-import DashboardScreen from './screens/DashboardScreen'
+import DashboardScreen from "./screens/DashboardScreen";
 
 function App() {
-  return <DashboardScreen />
+  return <DashboardScreen />;
 }
 
-export default App
+export default App;

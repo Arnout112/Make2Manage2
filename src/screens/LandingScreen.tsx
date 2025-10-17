@@ -1,4 +1,4 @@
-import { Factory, BarChart3, Users, Target, Book, Play } from 'lucide-react'
+import { Factory, BarChart3, Users, Target, Book, Play, MousePointer } from 'lucide-react'
 import type { ScreenType } from '../types'
 
 interface LandingScreenProps {
@@ -61,6 +61,14 @@ export default function LandingScreen({ onNavigate }: LandingScreenProps) {
             >
               <Play size={24} />
               <span>Start Game</span>
+            </button>
+            
+            <button
+              onClick={() => onNavigate('manual-game')}
+              className="flex items-center space-x-2 bg-green-600 text-white px-8 py-4 rounded-xl hover:bg-green-700 transition-colors text-lg font-semibold shadow-lg"
+            >
+              <MousePointer size={24} />
+              <span>Manual Game</span>
             </button>
             
             <button

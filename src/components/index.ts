@@ -1,15 +1,26 @@
-export { default as Sidebar } from './Sidebar'
-export { default as Header } from './Header'
-export { default as GameControls } from './GameControls'
-export { default as GameSettingsModal } from './GameSettingsModal'
-export { default as ExportControls } from './ExportControls'
-export { default as DeliveryForecast } from './DeliveryForecast'
-export { default as RandomEventsDisplay } from './RandomEventsDisplay'
-export { default as UndoRedoControls } from './UndoRedoControls'
-export { default as QuickStartScenarios } from './QuickStartScenarios'
-export { default as CustomerOrderManager } from './CustomerOrderManager'
-export { default as RouteOptimizer } from './RouteOptimizer'
-export { default as CapacityPlanner } from './CapacityPlanner'
-export { default as LearningAnalytics } from './LearningAnalytics'
-export { default as PerformanceDashboard } from './PerformanceDashboard'
-export { default as AccessibilityControls } from './AccessibilityControls'
+/**
+ * Components Index - Organized Exports
+ * Centralized exports from reorganized component directories
+ */
+
+// Layout Components
+export { default as Header } from "./layouts/Header";
+export { default as Sidebar } from "./layouts/Sidebar";
+
+// Game Components
+export { default as CapacityPlanner } from "./game/CapacityPlanner";
+export { default as CustomerOrderManager } from "./game/CustomerOrderManager";
+export { default as DeliveryForecast } from "./game/DeliveryForecast";
+export { default as GameControls } from "./game/GameControls";
+export { default as LearningAnalytics } from "./game/LearningAnalytics";
+export { default as OrderProcessingGuide } from "./game/OrderProcessingGuide";
+export { default as PerformanceDashboard } from "./game/PerformanceDashboard";
+export { default as QuickStartScenarios } from "./game/QuickStartScenarios";
+export { default as RandomEventsDisplay } from "./game/RandomEventsDisplay";
+export { default as RouteOptimizer } from "./game/RouteOptimizer";
+
+// UI Components
+export { default as AccessibilityControls } from "./ui/AccessibilityControls";
+export { default as ExportControls } from "./ui/ExportControls";
+export { default as GameSettingsModal } from "./ui/GameSettingsModal";
+export { default as UndoRedoControls } from "./ui/UndoRedoControls";
