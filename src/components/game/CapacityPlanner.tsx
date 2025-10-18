@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react'
-import { BarChart3, Clock, TrendingUp, AlertTriangle, CheckCircle, Users, Zap } from 'lucide-react'
+import { BarChart3, TrendingUp, AlertTriangle, CheckCircle, Users, Zap } from 'lucide-react'
 import type { GameState } from '../types'
 
 interface CapacityPlannerProps {
   gameState: GameState
-  onScheduleOrder?: (orderId: string, departmentId: number, scheduledTime: Date) => void
   onRebalanceWorkload?: (rebalancingPlan: WorkloadRebalancingPlan) => void
 }
 
@@ -33,16 +32,7 @@ interface WorkloadRebalancingPlan {
   }
 }
 
-interface SchedulingRecommendation {
-  orderId: string
-  recommendedDepartment: number
-  alternativeDepartments: number[]
-  scheduledTime: Date
-  reasoning: string[]
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-}
-
-export default function CapacityPlanner({ gameState, onScheduleOrder, onRebalanceWorkload }: CapacityPlannerProps) {
+export default function CapacityPlanner({ gameState, onRebalanceWorkload }: CapacityPlannerProps) {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1h' | '4h' | '8h' | '24h'>('4h')
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false)
   const [selectedDepartment, setSelectedDepartment] = useState<number | null>(null)
@@ -86,79 +76,6 @@ export default function CapacityPlanner({ gameState, onScheduleOrder, onRebalanc
       }
     })
   }, [gameState.departments])
-
-  // Generate scheduling recommendations
-  const schedulingRecommendations = useMemo((): SchedulingRecommendation[] => {
-    const recommendations: SchedulingRecommendation[] = []
-    const now = new Date()
-    
-    gameState.pendingOrders.slice(0, 5).forEach(order => {
-      const reasoning: string[] = []
-      
-      // Find the best department for the first step in the route
-      const firstStepDept = order.route[0]
-      const targetDept = departmentCapacities.find(d => d.id === firstStepDept)
-      
-      if (!targetDept) return
-      
-      // Calculate scheduling priority
-      let priority: 'low' | 'medium' | 'high' | 'urgent' = order.priority === 'normal' ? 'medium' : order.priority as 'low' | 'high' | 'urgent'
-      
-      // Check if order should be prioritized due to due date
-      const timeUntilDue = order.dueDate.getTime() - now.getTime()
-      const hoursUntilDue = timeUntilDue / (1000 * 60 * 60)
-      
-      if (hoursUntilDue < 2 && priority !== 'urgent') {
-        priority = 'urgent'
-        reasoning.push('Due date approaching - escalated to urgent')
-      }
-      
-      // Find alternative departments with similar capabilities
-      const alternativeDepartments = departmentCapacities
-        .filter(d => d.id !== firstStepDept && d.availableCapacity > 0)
-        .sort((a, b) => a.currentUtilization - b.currentUtilization)
-        .slice(0, 2)
-        .map(d => d.id)
-      
-      // Calculate optimal scheduling time
-      const estimatedWaitTime = targetDept.queueLength * (targetDept.avgProcessingTime * 60 * 1000) // Convert to ms
-      const scheduledTime = new Date(now.getTime() + estimatedWaitTime)
-      
-      // Add reasoning based on department status
-      if (targetDept.bottleneckRisk === 'high') {
-        reasoning.push(`${targetDept.name} is overloaded - consider alternatives`)
-        if (alternativeDepartments.length > 0) {
-          const altDept = departmentCapacities.find(d => d.id === alternativeDepartments[0])
-          reasoning.push(`Alternative: ${altDept?.name} has ${altDept?.availableCapacity} available capacity`)
-        }
-      } else if (targetDept.bottleneckRisk === 'medium') {
-        reasoning.push(`${targetDept.name} is busy but manageable`)
-      } else {
-        reasoning.push(`${targetDept.name} has good availability`)
-      }
-      
-      // Add efficiency considerations
-      if (targetDept.efficiency > 1.1) {
-        reasoning.push('High efficiency department - good performance expected')
-      } else if (targetDept.efficiency < 0.9) {
-        reasoning.push('Lower efficiency department - may take longer than standard')
-      }
-      
-      recommendations.push({
-        orderId: order.id,
-        recommendedDepartment: firstStepDept,
-        alternativeDepartments,
-        scheduledTime,
-        reasoning,
-        priority
-      })
-    })
-    
-    return recommendations.sort((a, b) => {
-      const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 }
-      return priorityOrder[b.priority] - priorityOrder[a.priority]
-    })
-  }, [gameState.pendingOrders, departmentCapacities])
 
   // Generate workload rebalancing recommendations
   const workloadRebalancing = useMemo((): WorkloadRebalancingPlan | null => {
@@ -205,19 +122,7 @@ export default function CapacityPlanner({ gameState, onScheduleOrder, onRebalanc
     }
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'text-red-600 bg-red-100'
-      case 'high': return 'text-orange-600 bg-orange-100'
-      case 'medium': return 'text-blue-600 bg-blue-100'
-      case 'low': return 'text-gray-600 bg-gray-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200">
@@ -318,71 +223,6 @@ export default function CapacityPlanner({ gameState, onScheduleOrder, onRebalanc
                     </div>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Scheduling Recommendations */}
-        <div className="mb-8">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Scheduling Recommendations</h4>
-          <div className="space-y-3">
-            {schedulingRecommendations.map(rec => (
-              <div key={rec.orderId} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-medium">{rec.orderId}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(rec.priority)}`}>
-                      {rec.priority.toUpperCase()}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Clock size={14} className="text-gray-600" />
-                    <span className="text-sm text-gray-600">{formatTime(rec.scheduledTime)}</span>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Recommended Department:</p>
-                    <p className="text-sm text-blue-600">
-                      {departmentCapacities.find(d => d.id === rec.recommendedDepartment)?.name}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Alternatives:</p>
-                    <p className="text-sm text-gray-600">
-                      {rec.alternativeDepartments.map(id => 
-                        departmentCapacities.find(d => d.id === id)?.name
-                      ).join(', ') || 'None available'}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="mt-3">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Reasoning:</p>
-                  <ul className="text-sm text-gray-600">
-                    {rec.reasoning.map((reason, index) => (
-                      <li key={index} className="flex items-center gap-1">
-                        <CheckCircle size={12} className="text-green-600" />
-                        {reason}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                {onScheduleOrder && (
-                  <div className="mt-3 flex justify-end">
-                    <button
-                      onClick={() => onScheduleOrder(rec.orderId, rec.recommendedDepartment, rec.scheduledTime)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-                    >
-                      Apply Schedule
-                    </button>
-                  </div>
-                )}
               </div>
             ))}
           </div>

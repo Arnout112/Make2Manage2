@@ -4,19 +4,16 @@ import {
   Factory,
   ShoppingCart,
   Play,
-  Pause,
-  RotateCcw,
-  Eye,
   XCircle,
 } from "lucide-react";
-import type { Order, GameSettings } from "../types";
+import type { Order } from "../types";
 import {
   RandomEventsDisplay,
   UndoRedoControls,
   RouteOptimizer,
   CapacityPlanner,
 } from "../components";
-import { useGameSimulation } from "../hooks/useGameSimulation";
+import { useSharedGameState } from "../contexts/GameStateContext";
 import { 
   sortOrdersByPriorityRule, 
   getPriorityRuleDescription, 
@@ -36,31 +33,36 @@ export default function ManualGameScreen() {
   const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
   const [showPriorityPanel, setShowPriorityPanel] = useState(false);
 
-  // Game settings for Manual Game mode - focused on learning
-  const gameSettings: GameSettings = {
-    sessionDuration: 15, // Shorter sessions for manual learning
-    gameSpeed: 1, // Normal speed for learning
-    orderGenerationRate: "low", // Slower pace for manual processing
-    complexityLevel: "beginner", // Start with beginner level
-    enableEvents: true, // Keep events for learning scenarios
-    enableAdvancedRouting: false, // Simplify for manual mode
-    randomSeed: "manual-seed-123",
-  };
+  // Note: Game settings are now managed centrally in GameStateProvider
 
-  // Use the game simulation hook
-  const {
-    gameState,
-    currentDecisionIndex,
-    startGame,
-    pauseGame,
-    resetGame,
-    releaseOrder,
-    scheduleOrder,
-    rebalanceWorkload,
-    undoLastDecision,
-    redoLastDecision,
-    clearDecisionHistory,
-  } = useGameSimulation(gameSettings);
+  // Use the shared game state with error handling
+  let gameState, currentDecisionIndex, releaseOrder, scheduleOrder, rebalanceWorkload, undoLastDecision, redoLastDecision, clearDecisionHistory;
+  
+  try {
+    const sharedState = useSharedGameState();
+    gameState = sharedState.gameState;
+    currentDecisionIndex = sharedState.currentDecisionIndex;
+    releaseOrder = sharedState.releaseOrder;
+    scheduleOrder = sharedState.scheduleOrder;
+    rebalanceWorkload = sharedState.rebalanceWorkload;
+    undoLastDecision = sharedState.undoLastDecision;
+    redoLastDecision = sharedState.redoLastDecision;
+    clearDecisionHistory = sharedState.clearDecisionHistory;
+  } catch (error) {
+    return <div className="flex-1 p-8 bg-red-50">
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <strong>Error:</strong> {error?.toString()}
+      </div>
+    </div>;
+  }
+
+  if (!gameState) {
+    return <div className="flex-1 p-8 bg-gray-50">
+      <div className="text-center">Loading game state...</div>
+    </div>;
+  }
+
+  // Game controls are now handled by GameControlsHeaderWrapper in DashboardScreen
 
   const openOrderDetail = (order: Order) => {
     setSelectedOrder(order);
@@ -148,40 +150,49 @@ export default function ManualGameScreen() {
     const processingOrder = dept.inProcess;
     console.log(`Manually completing processing of order ${processingOrder.id} in ${dept.name}`);
 
-    // Find the next department in the order's route
-    const currentStepIndex = processingOrder.currentStepIndex || 0;
-    const nextStepIndex = currentStepIndex + 1;
-    const isLastStep = nextStepIndex >= processingOrder.route.length;
+    // Find which step this department represents in the order's route
+    const currentRouteStepIndex = processingOrder.route.indexOf(departmentId);
+    if (currentRouteStepIndex === -1) {
+      console.error(`Department ${departmentId} not found in order ${processingOrder.id} route`);
+      return;
+    }
+
+    // Check if this is the last step in the route
+    const isLastStep = currentRouteStepIndex >= processingOrder.route.length - 1;
 
     if (isLastStep) {
-      // Order is fully completed
+      // Order is fully completed - mark as done
       console.log(`Order ${processingOrder.id} has completed all manufacturing steps`);
-      alert(`Order ${processingOrder.id} has completed all manufacturing steps and will be moved to completed orders.`);
+      alert(`🎉 Order ${processingOrder.id} has completed ALL manufacturing steps!\n\nThis order is now FINISHED and will be moved to completed orders.`);
       
-      // Note: The actual completion will be handled by the automatic game simulation
-      // For now, we inform the user that the order is complete
+      // Complete the order - this should move it to completed orders
+      scheduleOrder(processingOrder.id, departmentId, new Date());
     } else {
-      // Move to next department
-      const nextDeptId = processingOrder.route[nextStepIndex];
-      const nextDept = gameState.departments.find(d => d.id === nextDeptId);
+      // Order needs more processing - show which departments are remaining
+      const completedSteps = processingOrder.route.slice(0, currentRouteStepIndex + 1);
+      const remainingSteps = processingOrder.route.slice(currentRouteStepIndex + 1);
       
-      if (nextDept) {
-        console.log(`Moving order ${processingOrder.id} from ${dept.name} to ${nextDept.name}`);
-        
-        // Check if next department has capacity
-        if (nextDept.wipCount >= nextDept.maxQueueSize) {
-          alert(`Cannot move order to ${nextDept.name} - department is at maximum capacity (${nextDept.maxQueueSize} orders)`);
-          return;
-        }
-        
-        // Use scheduleOrder to move the order to the next department
-        // This simulates completing processing and moving to next step
-        scheduleOrder(processingOrder.id, nextDeptId, new Date());
-        
-        console.log(`Order ${processingOrder.id} moved to ${nextDept.name} for next processing step`);
-      } else {
-        console.error(`Next department ${nextDeptId} not found for order ${processingOrder.id}`);
-      }
+      const completedDeptNames = completedSteps.map(id => {
+        const dept = gameState.departments.find(d => d.id === id);
+        return dept?.name || `Dept ${id}`;
+      }).join(' → ');
+      
+      const remainingDeptNames = remainingSteps.map(id => {
+        const dept = gameState.departments.find(d => d.id === id);
+        return dept?.name || `Dept ${id}`;
+      }).join(' → ');
+      
+      console.log(`Order ${processingOrder.id} completed ${dept.name}. Remaining: ${remainingDeptNames}`);
+      
+      alert(`✅ Order ${processingOrder.id} completed: ${dept.name}\n\n` +
+            `✓ Completed: ${completedDeptNames}\n` +
+            `→ Still needs: ${remainingDeptNames}\n\n` +
+            `The order will return to Order Management so you can manually assign it to the next department.`);
+      
+      // Complete current step - the order should return to pending orders automatically
+      // We'll complete processing at this department, which should trigger the order 
+      // to move back to pending status for manual re-assignment
+      scheduleOrder(processingOrder.id, departmentId, new Date());
     }
   };
 
@@ -205,77 +216,6 @@ export default function ManualGameScreen() {
 
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-gray-50">
-      {/* Header with Game Controls */}
-      <div className="mb-6 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Manual Game Mode</h1>
-            <p className="text-gray-600 mt-2">
-              Step-by-step manufacturing simulation for hands-on learning
-            </p>
-          </div>
-          
-          {/* Compact Game Controls for header */}
-          <div className="flex items-center space-x-3">
-            {/* Game Status Indicator */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Status:</span>
-              <span className={`text-sm font-medium px-2 py-1 rounded ${
-                gameState.session.status === "running"
-                  ? "bg-green-100 text-green-800"
-                  : gameState.session.status === "paused"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : gameState.session.status === "completed"
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-gray-100 text-gray-800"
-              }`}>
-                {gameState.session.status.charAt(0).toUpperCase() + gameState.session.status.slice(1)}
-              </span>
-            </div>
-
-            {/* Control Buttons */}
-            <div className="flex items-center space-x-2">
-              {gameState.session.status === "setup" && (
-                <button
-                  onClick={startGame}
-                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  <Play size={16} />
-                  <span>Start</span>
-                </button>
-              )}
-
-              {gameState.session.status === "running" && (
-                <button
-                  onClick={pauseGame}
-                  className="flex items-center space-x-2 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors font-medium"
-                >
-                  <Pause size={16} />
-                  <span>Pause</span>
-                </button>
-              )}
-
-              {gameState.session.status === "paused" && (
-                <button
-                  onClick={startGame}
-                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  <Play size={16} />
-                  <span>Resume</span>
-                </button>
-              )}
-
-              <button
-                onClick={resetGame}
-                className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                <RotateCcw size={16} />
-                <span>Reset</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Priority Rules Panel */}
       <div className="mb-6 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -349,23 +289,25 @@ export default function ManualGameScreen() {
         />
       </div>
 
-      {/* Order Management - Combined Sales and Incoming Orders */}
-      <div className="mb-8">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-800">
-                Order Management ({gameState.pendingOrders.length} pending)
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Customer orders waiting for production planning and release
-              </p>
+      {/* Main Production Layout - Order Management (Left) + Manufacturing Departments (Right) */}
+      <div className="mb-8 grid grid-cols-1 xl:grid-cols-5 gap-8">
+        {/* Left Side - Order Management */}
+        <div className="xl:col-span-2">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 h-fit">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800">
+                  Order Management ({gameState.pendingOrders.length} pending)
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Customer orders waiting for production planning and release
+                </p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <Package className="w-8 h-8 text-green-600" />
+                <ShoppingCart className="w-8 h-8 text-blue-600" />
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Package className="w-8 h-8 text-green-600" />
-              <ShoppingCart className="w-8 h-8 text-blue-600" />
-            </div>
-          </div>
           
           {/* Quick Actions */}
           <div className="flex items-center justify-between mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -399,131 +341,106 @@ export default function ManualGameScreen() {
             </div>
           </div>
 
-          <div className="text-sm text-gray-600 mb-4">
+          <div className="text-sm text-gray-600 mb-3">
             <strong>Instructions:</strong> Each customer order needs to be <strong>released to production</strong> before manufacturing can begin. 
-            Click "Release to Production" to approve an order and send it to the first department in its route. 
-            Consider order priority, due dates, and department capacity when deciding which orders to release.
+            Click "Release to Production" to approve an order and send it to the first department in its route.
           </div>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {gameState.pendingOrders.slice(0, 8).map((order) => (
+          
+          {/* Compact Grid Layout - 4 cards per row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
+            {gameState.pendingOrders.slice(0, 12).map((order) => (
               <div
                 key={order.id}
                 draggable
                 onDragStart={() => handleDragStart(order)}
                 onDragEnd={handleDragEnd}
-                className={`p-4 bg-gray-50 rounded-lg border transition-all duration-200 ${
+                className={`p-3 bg-gray-50 rounded-lg border transition-all duration-200 ${
                   draggedOrder?.id === order.id 
                     ? 'opacity-50 scale-95' 
                     : 'hover:bg-gray-100 cursor-grab active:cursor-grabbing'
                 }`}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono text-sm font-semibold text-gray-800">
-                    {order.id}
-                  </span>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full text-white font-medium ${getSLAStatusColor(
-                      order
-                    )}`}
-                  >
-                    {order.slaStatus?.toUpperCase()}
-                  </span>
+                {/* Compact Header with ID, Priority, Due Date, and SLA Status */}
+                <div className="mb-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-mono text-xs font-semibold text-gray-800">
+                      {order.id}
+                    </span>
+                    <span
+                      className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(order)}`}
+                    >
+                      {order.slaStatus === 'on-track' ? 'OK' : order.slaStatus === 'at-risk' ? 'RISK' : 'LATE'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-1">
+                      <span className={`px-1 py-0.5 rounded font-medium ${
+                        order.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                        order.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                        order.priority === 'normal' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {order.priority === 'urgent' ? 'URG' : order.priority === 'high' ? 'HIGH' : order.priority === 'normal' ? 'NORM' : 'LOW'}
+                      </span>
+                      {order.isHalfOrder && (
+                        <span className="bg-purple-100 text-purple-800 px-1 py-0.5 rounded font-medium">
+                          HALF
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-gray-600">
+                      {order.dueDate.toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
                 
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
-                      Route: {order.route.join("→")}
-                    </span>
-                    {order.isHalfOrder && (
-                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
-                        HALF
-                      </span>
-                    )}
+                {/* Route */}
+                <div className="mb-2">
+                  <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                    {order.route.join("→")}
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded font-medium ${
-                    order.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                    order.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                    order.priority === 'normal' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {order.priority.toUpperCase()}
-                  </span>
                 </div>
 
-                <div className="text-xs text-gray-600 mb-3">
-                  Due: {order.dueDate.toLocaleDateString()} {order.dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </div>
-
-                {/* Quick Assignment Buttons */}
-                <div className="flex flex-wrap gap-1">
-                  {order.route.map((deptId) => {
-                    const dept = gameState.departments.find(d => d.id === deptId);
-                    const isAtCapacity = dept && dept.wipCount >= dept.maxQueueSize;
-                    
-                    return (
-                      <button
-                        key={deptId}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAssignOrderToDepartment(order, deptId);
-                        }}
-                        disabled={isAtCapacity}
-                        className={`text-xs px-2 py-1 rounded font-medium transition-colors ${
-                          isAtCapacity 
-                            ? 'bg-red-100 text-red-400 cursor-not-allowed' 
-                            : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-                        }`}
-                        title={isAtCapacity ? `${dept?.name} is at capacity` : `Assign to ${dept?.name}`}
-                      >
-                        {dept?.name}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openOrderDetail(order);
-                    }}
-                    className="text-xs text-gray-400 hover:text-gray-600 flex items-center"
-                  >
-                    <Eye size={14} className="inline mr-1" />
-                    View Details
-                  </button>
-                  
+                {/* Action Buttons - Stacked vertically for compact layout */}
+                <div className="space-y-1">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleReleaseOrder(order.id);
                     }}
                     disabled={gameState.session.status !== "running"}
-                    className="flex items-center space-x-1 bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                    className="w-full flex items-center justify-center space-x-1 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                   >
-                    <Play size={12} />
-                    <span>Release to Production</span>
+                    <Play size={10} />
+                    <span>Release</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openOrderDetail(order);
+                    }}
+                    className="w-full text-xs text-gray-500 hover:text-gray-700 py-1"
+                  >
+                    View Details
                   </button>
                 </div>
               </div>
             ))}
             {gameState.pendingOrders.length === 0 && (
-              <p className="text-gray-500 text-center py-8">
+              <div className="col-span-full text-gray-500 text-center py-8">
                 No incoming orders
-              </p>
+              </div>
             )}
           </div>
+          </div>
         </div>
-      </div>
 
-      {/* Factory Grid (2x2) */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Manufacturing Departments
-        </h2>
-        <div className="grid grid-cols-2 gap-8 max-w-6xl mx-auto">
+        {/* Right Side - Manufacturing Departments */}
+        <div className="xl:col-span-3">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Manufacturing Departments
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {gameState.departments.map((dept) => {
             const priorityRule = departmentPriorityRules[dept.id];
             const sortedQueue = sortOrdersByPriorityRule(dept.queue, priorityRule);
@@ -749,6 +666,7 @@ export default function ManualGameScreen() {
               </div>
             );
           })}
+          </div>
         </div>
       </div>
 
@@ -873,9 +791,6 @@ export default function ManualGameScreen() {
       <div className="mb-8">
         <CapacityPlanner
           gameState={gameState}
-          onScheduleOrder={(orderId, departmentId, scheduledTime) => {
-            scheduleOrder(orderId, departmentId, scheduledTime);
-          }}
           onRebalanceWorkload={(plan) => {
             rebalanceWorkload(
               plan.sourceIds,

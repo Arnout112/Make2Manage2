@@ -7,11 +7,23 @@ import {
   Factory,
   AlertTriangle,
 } from "lucide-react";
+import { PerformanceDashboard } from "../components";
+import { useSharedGameState } from "../contexts/GameStateContext";
 import type { StatisticsFilter } from "../types";
 
 export default function AnalyticsScreen() {
   const [statisticsFilter, setStatisticsFilter] =
     useState<StatisticsFilter>("order-doorlooptijd");
+
+  // Use shared game state for performance data with error handling
+  let gameState;
+  try {
+    const sharedState = useSharedGameState();
+    gameState = sharedState.gameState;
+  } catch (error) {
+    console.error('AnalyticsScreen: Error accessing shared game state:', error);
+    gameState = null;
+  }
 
   const filterOptions = [
     {
@@ -325,6 +337,26 @@ export default function AnalyticsScreen() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Performance Dashboard */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Performance Dashboard
+        </h2>
+        {gameState ? (
+          <PerformanceDashboard
+            gameState={gameState}
+            onExportMetrics={() => {
+              console.log("Exporting performance metrics from Analytics");
+              // Export comprehensive performance data
+            }}
+          />
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+            <p className="text-yellow-800">Performance dashboard unavailable - no game state</p>
+          </div>
+        )}
       </div>
     </div>
   );

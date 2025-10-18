@@ -1,0 +1,85 @@
+import { Play, Pause, RotateCcw } from "lucide-react";
+import HeaderEventsDisplay from "./HeaderEventsDisplay";
+import type { GameSession, GameEvent } from "../../types";
+
+interface GameControlsHeaderProps {
+  gameSession: GameSession;
+  events?: GameEvent[];
+  onStart: () => void;
+  onPause: () => void;
+  onReset: () => void;
+}
+
+export default function GameControlsHeader({
+  gameSession,
+  events = [],
+  onStart,
+  onPause,
+  onReset
+}: GameControlsHeaderProps) {
+  return (
+    <div className="flex items-center justify-between w-full">
+      {/* Left Section - Game Status Indicator */}
+      <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-600">Status:</span>
+          <span className={`text-sm font-medium px-2 py-1 rounded ${
+            gameSession.status === "running"
+              ? "bg-green-100 text-green-800"
+              : gameSession.status === "paused"
+              ? "bg-yellow-100 text-yellow-800"
+              : gameSession.status === "completed"
+              ? "bg-blue-100 text-blue-800"
+              : "bg-gray-100 text-gray-800"
+          }`}>
+            {gameSession.status.charAt(0).toUpperCase() + gameSession.status.slice(1)}
+          </span>
+        </div>
+        
+        {/* Events Display */}
+        <HeaderEventsDisplay events={events} />
+      </div>
+
+      {/* Right Section - Control Buttons (with margin to avoid accessibility settings) */}
+      <div className="flex items-center space-x-2 mr-16">
+        {gameSession.status === "setup" && (
+          <button
+            onClick={onStart}
+            className="flex items-center space-x-2 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+          >
+            <Play size={16} />
+            <span>Start</span>
+          </button>
+        )}
+
+        {gameSession.status === "running" && (
+          <button
+            onClick={onPause}
+            className="flex items-center space-x-2 bg-yellow-600 text-white px-3 py-2 rounded-lg hover:bg-yellow-700 transition-colors font-medium text-sm"
+          >
+            <Pause size={16} />
+            <span>Pause</span>
+          </button>
+        )}
+
+        {gameSession.status === "paused" && (
+          <button
+            onClick={onStart}
+            className="flex items-center space-x-2 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+          >
+            <Play size={16} />
+            <span>Resume</span>
+          </button>
+        )}
+
+        <button
+          onClick={onReset}
+          className="flex items-center space-x-2 bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm"
+        >
+          <RotateCcw size={16} />
+          <span>Reset</span>
+        </button>
+      </div>
+    </div>
+  );
+}
