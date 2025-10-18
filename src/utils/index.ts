@@ -15,6 +15,9 @@ export * from "./calculations";
 // Validation utilities
 export * from "./validators";
 
+// Priority rule utilities
+export * from "./priorityRules";
+
 // Re-export commonly used functions for convenience
 export {
   formatDate,

@@ -64,24 +64,43 @@ export const generateInitialWIP = (rng: SeededRandom, complexityLevel: string): 
     const customer = rng.choice(customers)
     const priority = rng.choice(priorities) as 'low' | 'normal' | 'high' | 'urgent'
     
+    // Add half order logic to WIP as well
+    const isHalfOrder = rng.next() < 0.15 // 15% chance for WIP orders
+    const halfOrderReasons = ['defect_repair', 'partial_work', 'rework', 'quality_issue']
+    const halfOrderReason = isHalfOrder ? halfOrderReasons[Math.floor(rng.next() * halfOrderReasons.length)] as 'defect_repair' | 'partial_work' | 'rework' | 'quality_issue' : undefined
+    const processingTimeMultiplier = isHalfOrder ? rng.between(0.3, 0.7) : 1.0
+    
+    // Calculate processing times with randomization and half-order logic
+    const baseProcessingTime = Math.floor(rng.between(2, 4)) // 2-4 minutes base
+    const actualProcessingTime = Math.floor(baseProcessingTime * processingTimeMultiplier)
+    const remainingTime = Math.floor(rng.between(0.5, actualProcessingTime))
+    
     orders.push({
       id: `WIP-${String(i + 1).padStart(3, '0')}`,
       customerId: customer.id,
       customerName: customer.name,
       priority,
-      orderValue: rng.between(3000, 15000),
-      dueDate: new Date(Date.now() + rng.between(30, 120) * 60 * 1000), // 30-120 minutes
+      orderValue: rng.between(1500, 8000) * (isHalfOrder ? 0.6 : 1.0), // Adjust value for half orders
+      dueDate: new Date(Date.now() + rng.between(10, 30) * 60 * 1000), // 10-30 minutes (shorter)
       route,
       currentStepIndex: currentStep,
       status: 'processing',
       timestamps: generateTimestamps(route.slice(0, currentStep + 1)),
       reworkCount: 0,
-      createdAt: new Date(Date.now() - rng.between(10, 60) * 60 * 1000), // Started 10-60 min ago
-      processingTime: Math.floor(rng.between(15, 45)), // 15-45 minutes for current step
-      processingTimeRemaining: Math.floor(rng.between(5, 30)), // 5-30 minutes remaining
+      createdAt: new Date(Date.now() - rng.between(5, 15) * 60 * 1000), // Started 5-15 min ago
+      processingTime: actualProcessingTime,
+      processingTimeRemaining: remainingTime,
       currentDepartment: route[currentStep],
       slaStatus: rng.next() < 0.7 ? 'on-track' : rng.next() < 0.8 ? 'at-risk' : 'overdue',
-      rushOrder: priority === 'urgent' && rng.next() < 0.2
+      rushOrder: priority === 'urgent' && rng.next() < 0.2,
+      isHalfOrder,
+      halfOrderReason,
+      processingTimeMultiplier,
+      specialInstructions: isHalfOrder && halfOrderReason
+        ? `Half Order: ${halfOrderReason.replace('_', ' ').toUpperCase()}`
+        : priority === 'urgent'
+        ? 'URGENT - Priority handling required'
+        : undefined
     })
   }
 
@@ -137,36 +156,42 @@ export const initializeDepartments = (settings: GameSettings): Department[] => {
   const baseDepartments = [
     { 
       id: 1, 
-      name: 'Cutting & Prep',
-      standardProcessingTime: 15, // 15 minutes standard
+      name: 'Welding',
+      standardProcessingTime: Math.floor(rng.between(2.5, 4)), // 2.5-4 minutes with randomization
       operations: [
-        { id: 'cut-1', name: 'Material Cutting', duration: 8, description: 'Cut raw materials to specifications' },
-        { id: 'prep-1', name: 'Surface Preparation', duration: 7, description: 'Clean and prepare surfaces for assembly' }
+        { id: 'weld-1', name: 'Joint Preparation', duration: 1, description: 'Prepare materials and setup welding equipment' },
+        { id: 'weld-2', name: 'Welding Process', duration: 2, description: 'Execute welding according to specifications' },
+        { id: 'weld-3', name: 'Weld Inspection', duration: 1, description: 'Visual inspection and quality check' }
       ]
     },
     { 
       id: 2, 
-      name: 'Assembly',
-      standardProcessingTime: 25, // 25 minutes standard  
+      name: 'Machining',
+      standardProcessingTime: Math.floor(rng.between(3, 4)), // 3-4 minutes with randomization
       operations: [
-        { id: 'asm-1', name: 'Component Assembly', duration: 25, description: 'Assemble components according to specifications' }
+        { id: 'mach-1', name: 'Setup & Programming', duration: 1, description: 'Machine setup and program loading' },
+        { id: 'mach-2', name: 'Rough Machining', duration: 2, description: 'Initial material removal and shaping' },
+        { id: 'mach-3', name: 'Finish Machining', duration: 1, description: 'Precision finishing and final dimensions' }
       ]
     },
     { 
       id: 3, 
-      name: 'Quality Control',
-      standardProcessingTime: 12, // 12 minutes standard
+      name: 'Painting',
+      standardProcessingTime: Math.floor(rng.between(2, 3.5)), // 2-3.5 minutes with randomization
       operations: [
-        { id: 'qc-1', name: 'Initial Inspection', duration: 7, description: 'Visual and dimensional inspection' },
-        { id: 'qc-2', name: 'Function Testing', duration: 5, description: 'Test product functionality and performance' }
+        { id: 'paint-1', name: 'Surface Preparation', duration: 1, description: 'Clean and prepare surface for painting' },
+        { id: 'paint-2', name: 'Paint Application', duration: 1.5, description: 'Apply primer and topcoat' },
+        { id: 'paint-3', name: 'Drying & Inspection', duration: 0.5, description: 'Final drying and quality inspection' }
       ]
     },
     { 
       id: 4, 
-      name: 'Packaging & Ship',
-      standardProcessingTime: 8, // 8 minutes standard
+      name: 'Assembly',
+      standardProcessingTime: Math.floor(rng.between(2, 4)), // 2-4 minutes with randomization
       operations: [
-        { id: 'pack-1', name: 'Final Packaging', duration: 8, description: 'Package product for shipment' }
+        { id: 'asm-1', name: 'Component Gathering', duration: 0.5, description: 'Collect all required components' },
+        { id: 'asm-2', name: 'Product Assembly', duration: 2.5, description: 'Assemble components according to specifications' },
+        { id: 'asm-3', name: 'Final Testing', duration: 1, description: 'Test assembled product functionality' }
       ]
     }
   ]
@@ -183,7 +208,10 @@ export const initializeDepartments = (settings: GameSettings): Department[] => {
       capacity: config.capacity,
       efficiency: config.efficiency,
       equipmentCondition: config.equipmentCondition,
-      status: rng.next() < 0.8 ? 'available' : 'busy' as const
+      status: rng.next() < 0.8 ? 'available' : 'busy' as const,
+      priorityRule: 'FIFO' as const, // Default to FIFO (First In, First Out)
+      maxQueueSize: Math.floor(rng.between(8, 15)), // Each department can queue 8-15 orders
+      wipCount: 0 // Will be calculated after WIP distribution
     }
   })
 }
@@ -213,11 +241,18 @@ export const generateInitialOrders = (settings: GameSettings): Order[] => {
     const priority = rng.choice(priorities) as 'low' | 'normal' | 'high' | 'urgent'
     const isRush = priority === 'urgent' && rng.next() < 0.3 // 30% chance for urgent orders to be rush
     
-    // Order value based on priority and customer tier
+    // Determine if this is a half order (20% chance)
+    const isHalfOrder = rng.next() < 0.2
+    const halfOrderReasons = ['defect_repair', 'partial_work', 'rework', 'quality_issue']
+    const halfOrderReason = isHalfOrder ? halfOrderReasons[Math.floor(rng.next() * halfOrderReasons.length)] as 'defect_repair' | 'partial_work' | 'rework' | 'quality_issue' : undefined
+    const processingTimeMultiplier = isHalfOrder ? rng.between(0.3, 0.7) : 1.0 // Half orders take 30-70% of normal time
+
+    // Order value based on priority, customer tier, and half order status
     const baseValue = rng.between(2000, 20000)
     const tierMultiplier = customer.tier === 'vip' ? 1.5 : customer.tier === 'premium' ? 1.2 : 1.0
     const priorityMultiplier = priority === 'urgent' ? 1.3 : priority === 'high' ? 1.1 : 1.0
-    const orderValue = Math.floor(baseValue * tierMultiplier * priorityMultiplier)
+    const halfOrderMultiplier = isHalfOrder ? 0.6 : 1.0 // Half orders are worth 60% of normal orders
+    const orderValue = Math.floor(baseValue * tierMultiplier * priorityMultiplier * halfOrderMultiplier)
 
     orders.push({
       id: `ORD-${String(i + 1).padStart(3, '0')}`,
@@ -225,7 +260,7 @@ export const generateInitialOrders = (settings: GameSettings): Order[] => {
       customerName: customer.name,
       priority,
       orderValue,
-      dueDate: new Date(Date.now() + rng.between(60, 180) * 60 * 1000), // 1-3 hours
+      dueDate: new Date(Date.now() + rng.between(15, 45) * 60 * 1000), // 15-45 minutes (shorter due to faster processing)
       route,
       currentStepIndex: -1, // Not started yet
       status: 'queued',
@@ -234,8 +269,16 @@ export const generateInitialOrders = (settings: GameSettings): Order[] => {
       createdAt: new Date(),
       slaStatus: 'on-track',
       rushOrder: isRush,
-      specialInstructions: isRush ? 'URGENT - Priority handling required' : 
-                          customer.tier === 'vip' ? 'VIP customer - ensure quality' : undefined
+      isHalfOrder,
+      halfOrderReason,
+      processingTimeMultiplier,
+      specialInstructions: isHalfOrder && halfOrderReason
+        ? `Half Order: ${halfOrderReason.replace('_', ' ').toUpperCase()}` 
+        : isRush 
+        ? 'URGENT - Priority handling required' 
+        : customer.tier === 'vip' 
+        ? 'VIP customer - ensure quality' 
+        : undefined
     })
   }
 
@@ -273,6 +316,11 @@ export const initializeGameState = (settings: GameSettings): GameState => {
         }
       }
     }
+  })
+
+  // Update WIP counts for each department
+  departments.forEach(dept => {
+    dept.wipCount = dept.queue.length + (dept.inProcess ? 1 : 0)
   })
 
   const initialPerformance: GamePerformance = {

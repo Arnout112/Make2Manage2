@@ -13,13 +13,16 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
 
   // Calculate processing time for an order at a department
   const calculateProcessingTime = useCallback((order: Order, department: Department): number => {
-    // Use standard processing time as base
+    // Use standard processing time as base (already in minutes, convert to milliseconds)
     const baseTime = department.standardProcessingTime * 60 * 1000 // Convert to milliseconds
     const efficiencyFactor = department.efficiency
     const equipmentFactor = department.equipmentCondition
     const complexityFactor = order.route.length > 5 ? 1.2 : order.route.length < 3 ? 0.8 : 1.0
     
-    return Math.floor(baseTime * efficiencyFactor * equipmentFactor * complexityFactor)
+    // Apply half order multiplier if present
+    const halfOrderMultiplier = order.processingTimeMultiplier || 1.0
+    
+    return Math.floor(baseTime * efficiencyFactor * equipmentFactor * complexityFactor * halfOrderMultiplier)
   }, [])
 
   // Generate new orders based on time and settings
@@ -74,18 +77,32 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         priority = rng.between(0, 100) < 10 ? 'high' : 'normal'
       }
       
-      // Check for rush order
+      // Check for rush order and half order
       const isRushOrder = rng.between(0, 100) < (randomCustomer.tier === 'vip' ? 15 : 5)
+      const isHalfOrder = rng.next() < 0.2 // 20% chance for new orders
+      const halfOrderReasons = ['defect_repair', 'partial_work', 'rework', 'quality_issue']
+      const halfOrderReason = isHalfOrder ? halfOrderReasons[Math.floor(rng.next() * halfOrderReasons.length)] as 'defect_repair' | 'partial_work' | 'rework' | 'quality_issue' : undefined
+      const processingTimeMultiplier = isHalfOrder ? rng.between(0.3, 0.7) : 1.0
+      
+      // Adjust order value for half orders
+      const adjustedOrderValue = Math.round(orderValue * (isHalfOrder ? 0.6 : 1.0))
       
       newOrders.push({
         id: orderId,
         customerId: randomCustomer.id,
         customerName: randomCustomer.name,
         priority,
-        orderValue,
-        specialInstructions: isRushOrder ? 'RUSH ORDER - Expedited processing required' : '',
+        orderValue: adjustedOrderValue,
+        specialInstructions: isHalfOrder && halfOrderReason
+          ? `Half Order: ${halfOrderReason.replace('_', ' ').toUpperCase()}`
+          : isRushOrder 
+          ? 'RUSH ORDER - Expedited processing required' 
+          : '',
         rushOrder: isRushOrder,
-        dueDate: new Date(Date.now() + rng.between(90, 240) * 60 * 1000), // 1.5-4 hours
+        isHalfOrder,
+        halfOrderReason,
+        processingTimeMultiplier,
+        dueDate: new Date(Date.now() + rng.between(15, 45) * 60 * 1000), // 15-45 minutes (shorter due to faster processing)
         route,
         currentStepIndex: -1,
         status: 'queued',

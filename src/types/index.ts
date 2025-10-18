@@ -30,6 +30,9 @@ export interface Order {
   specialInstructions?: string; // R03: Special handling requirements
   rushOrder?: boolean; // R03: Rush order flag
   scheduledStartTime?: Date; // R04-R05: Scheduled start time for capacity planning
+  isHalfOrder?: boolean; // Half orders require only 50% of normal processing time
+  halfOrderReason?: "defect_repair" | "partial_work" | "rework" | "quality_issue"; // Reason for half order
+  processingTimeMultiplier?: number; // Multiplier for processing time (0.5 for half orders, 1.0 for normal)
 }
 
 export interface OperationProgress {
@@ -40,6 +43,8 @@ export interface OperationProgress {
   duration: number;
   completed: boolean;
 }
+
+export type PriorityRule = "FIFO" | "EDD" | "SPT";
 
 export interface Department {
   id: number;
@@ -56,6 +61,9 @@ export interface Department {
   operations: DepartmentOperation[]; // List of operations this department performs
   standardProcessingTime: number; // Standard time for all operations in minutes
   currentOperationIndex?: number; // For multi-step departments
+  priorityRule: PriorityRule; // Priority rule for this department (FIFO, EDD, SPT)
+  maxQueueSize: number; // Maximum queue capacity for this department
+  wipCount: number; // Current Work-in-Progress count (queue + inProcess)
 }
 
 export interface DepartmentOperation {
