@@ -121,7 +121,7 @@ export default function DashboardScreen() {
               title={screenInfo.title}
               subtitle={screenInfo.subtitle}
               rightContent={
-                activeScreen === "manual-game" ? (
+                activeScreen === "game" ? (
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => setShowHelpSidebar(!showHelpSidebar)}
@@ -143,8 +143,8 @@ export default function DashboardScreen() {
         </GameStateProvider>
       )}
 
-      {/* Help Sidebar - Only show on manual-game screen */}
-      {activeScreen === "manual-game" && showHelpSidebar && (
+      {/* Help Sidebar - Only show on game screen */}
+      {activeScreen === "game" && showHelpSidebar && (
         <div className="fixed inset-y-0 right-0 z-50 w-96 bg-white shadow-2xl border-l border-gray-200 transform transition-transform">
           <div className="flex flex-col h-full">
             {/* Sidebar Header */}
@@ -245,7 +245,7 @@ export default function DashboardScreen() {
       )}
 
       {/* Sidebar Overlay */}
-      {activeScreen === "manual-game" && showHelpSidebar && (
+      {activeScreen === "game" && showHelpSidebar && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setShowHelpSidebar(false)}
