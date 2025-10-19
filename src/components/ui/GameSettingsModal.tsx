@@ -1,28 +1,28 @@
-import { useState } from 'react'
-import { Settings, Clock, Zap, Target, AlertCircle } from 'lucide-react'
-import type { GameSettings } from '../types'
+import { useState } from "react";
+import { Settings, Clock, Zap, Target, AlertCircle } from "lucide-react";
+import type { GameSettings } from "../../types";
 
 interface GameSettingsModalProps {
-  currentSettings: GameSettings
-  onUpdateSettings: (settings: GameSettings) => void
-  onClose: () => void
-  isOpen: boolean
+  currentSettings: GameSettings;
+  onUpdateSettings: (settings: GameSettings) => void;
+  onClose: () => void;
+  isOpen: boolean;
 }
 
-export default function GameSettingsModal({ 
-  currentSettings, 
-  onUpdateSettings, 
-  onClose, 
-  isOpen 
+export default function GameSettingsModal({
+  currentSettings,
+  onUpdateSettings,
+  onClose,
+  isOpen,
 }: GameSettingsModalProps) {
-  const [settings, setSettings] = useState<GameSettings>(currentSettings)
+  const [settings, setSettings] = useState<GameSettings>(currentSettings);
 
   const handleSave = () => {
-    onUpdateSettings(settings)
-    onClose()
-  }
+    onUpdateSettings(settings);
+    onClose();
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -30,9 +30,11 @@ export default function GameSettingsModal({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <Settings className="w-6 h-6 text-blue-600" />
-            <h2 className="text-2xl font-semibold text-gray-800">Game Settings</h2>
+            <h2 className="text-2xl font-semibold text-gray-800">
+              Game Settings
+            </h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 p-2"
           >
@@ -51,11 +53,16 @@ export default function GameSettingsModal({
               {[15, 30, 60].map((duration) => (
                 <button
                   key={duration}
-                  onClick={() => setSettings({ ...settings, sessionDuration: duration as 15 | 30 | 60 })}
+                  onClick={() =>
+                    setSettings({
+                      ...settings,
+                      sessionDuration: duration as 15 | 30 | 60,
+                    })
+                  }
                   className={`p-3 rounded-lg border-2 transition-colors ${
                     settings.sessionDuration === duration
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   {duration} minutes
@@ -74,18 +81,25 @@ export default function GameSettingsModal({
               {[1, 2, 4, 8].map((speed) => (
                 <button
                   key={speed}
-                  onClick={() => setSettings({ ...settings, gameSpeed: speed as 1 | 2 | 4 | 8 })}
+                  onClick={() =>
+                    setSettings({
+                      ...settings,
+                      gameSpeed: speed as 1 | 2 | 4 | 8,
+                    })
+                  }
                   className={`p-3 rounded-lg border-2 transition-colors ${
                     settings.gameSpeed === speed
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? "border-green-500 bg-green-50 text-green-700"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   {speed}x
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Higher speeds make the simulation run faster</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Higher speeds make the simulation run faster
+            </p>
           </div>
 
           {/* Order Generation Rate */}
@@ -95,14 +109,16 @@ export default function GameSettingsModal({
               Order Generation Rate
             </label>
             <div className="grid grid-cols-3 gap-3">
-              {(['low', 'medium', 'high'] as const).map((rate) => (
+              {(["low", "medium", "high"] as const).map((rate) => (
                 <button
                   key={rate}
-                  onClick={() => setSettings({ ...settings, orderGenerationRate: rate })}
+                  onClick={() =>
+                    setSettings({ ...settings, orderGenerationRate: rate })
+                  }
                   className={`p-3 rounded-lg border-2 transition-colors capitalize ${
                     settings.orderGenerationRate === rate
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? "border-purple-500 bg-purple-50 text-purple-700"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   {rate}
@@ -117,19 +133,23 @@ export default function GameSettingsModal({
               Complexity Level
             </label>
             <div className="grid grid-cols-3 gap-3">
-              {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setSettings({ ...settings, complexityLevel: level })}
-                  className={`p-3 rounded-lg border-2 transition-colors capitalize ${
-                    settings.complexityLevel === level
-                      ? 'border-amber-500 bg-amber-50 text-amber-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  {level}
-                </button>
-              ))}
+              {(["beginner", "intermediate", "advanced"] as const).map(
+                (level) => (
+                  <button
+                    key={level}
+                    onClick={() =>
+                      setSettings({ ...settings, complexityLevel: level })
+                    }
+                    className={`p-3 rounded-lg border-2 transition-colors capitalize ${
+                      settings.complexityLevel === level
+                        ? "border-amber-500 bg-amber-50 text-amber-700"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                )
+              )}
             </div>
           </div>
 
@@ -139,7 +159,9 @@ export default function GameSettingsModal({
               <input
                 type="checkbox"
                 checked={settings.enableEvents}
-                onChange={(e) => setSettings({ ...settings, enableEvents: e.target.checked })}
+                onChange={(e) =>
+                  setSettings({ ...settings, enableEvents: e.target.checked })
+                }
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700">
@@ -147,7 +169,9 @@ export default function GameSettingsModal({
                 Enable Random Events (R07)
               </span>
             </label>
-            <p className="text-xs text-gray-500 ml-7">Equipment failures, delivery delays, rush orders</p>
+            <p className="text-xs text-gray-500 ml-7">
+              Equipment failures, delivery delays, rush orders
+            </p>
           </div>
 
           {/* R06: Enable Advanced Routing */}
@@ -156,7 +180,12 @@ export default function GameSettingsModal({
               <input
                 type="checkbox"
                 checked={settings.enableAdvancedRouting}
-                onChange={(e) => setSettings({ ...settings, enableAdvancedRouting: e.target.checked })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    enableAdvancedRouting: e.target.checked,
+                  })
+                }
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700">
@@ -164,7 +193,10 @@ export default function GameSettingsModal({
                 Enable Advanced Routing (R06)
               </span>
             </label>
-            <p className="text-xs text-gray-500 ml-7">Intelligent route optimization, bottleneck avoidance, priority routing</p>
+            <p className="text-xs text-gray-500 ml-7">
+              Intelligent route optimization, bottleneck avoidance, priority
+              routing
+            </p>
           </div>
 
           {/* Random Seed */}
@@ -174,12 +206,19 @@ export default function GameSettingsModal({
             </label>
             <input
               type="text"
-              value={settings.randomSeed || ''}
-              onChange={(e) => setSettings({ ...settings, randomSeed: e.target.value || undefined })}
+              value={settings.randomSeed || ""}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  randomSeed: e.target.value || undefined,
+                })
+              }
               placeholder="Leave empty for random scenarios"
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            <p className="text-xs text-gray-500 mt-1">Use same seed for reproducible scenarios</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Use same seed for reproducible scenarios
+            </p>
           </div>
         </div>
 
@@ -200,5 +239,5 @@ export default function GameSettingsModal({
         </div>
       </div>
     </div>
-  )
+  );
 }

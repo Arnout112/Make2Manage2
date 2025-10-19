@@ -1,19 +1,23 @@
 import { useState } from "react";
+import { Lightbulb, X } from "lucide-react";
 import Sidebar from "../components/layouts/Sidebar";
 import Header from "../components/layouts/Header";
 import { AccessibilityControls } from "../components";
 import { GameControlsHeader } from "../components/game";
-import { GameStateProvider, useSharedGameState } from "../contexts/GameStateContext";
+import {
+  GameStateProvider,
+  useSharedGameState,
+} from "../contexts/GameStateContext";
+import { getPriorityRuleDescription } from "../utils/priorityRules";
 import LandingScreen from "./LandingScreen";
-import GameScreen from "./GameScreen";
 import AnalyticsScreen from "./AnalyticsScreen";
-import ManualGameScreen from "./ManualGameScreen";
+import GameScreen from "./GameScreen";
 import type { ScreenType, NavigationScreen, GameSettings } from "../types";
 
 // Component to provide game controls using shared state
 function GameControlsHeaderWrapper() {
   const { gameState, startGame, pauseGame, resetGame } = useSharedGameState();
-  
+
   return (
     <GameControlsHeader
       gameSession={gameState.session}
@@ -27,6 +31,7 @@ function GameControlsHeaderWrapper() {
 
 export default function DashboardScreen() {
   const [activeScreen, setActiveScreen] = useState<ScreenType>("landing");
+  const [showHelpSidebar, setShowHelpSidebar] = useState(false);
 
   // Shared game settings for all screens that need game state
   const sharedGameSettings: GameSettings = {
@@ -81,8 +86,6 @@ export default function DashboardScreen() {
         return <LandingScreen onNavigate={handleLandingNavigate} />;
       case "game":
         return <GameScreen />;
-      case "manual-game":
-        return <ManualGameScreen />;
       case "analytics":
         return <AnalyticsScreen />;
       default:
@@ -114,12 +117,22 @@ export default function DashboardScreen() {
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Header */}
-            <Header 
-              title={screenInfo.title} 
+            <Header
+              title={screenInfo.title}
               subtitle={screenInfo.subtitle}
               rightContent={
                 activeScreen === "manual-game" ? (
-                  <GameControlsHeaderWrapper />
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setShowHelpSidebar(!showHelpSidebar)}
+                      className="flex items-center gap-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-4 py-2 rounded-lg border border-yellow-300 transition-colors"
+                      title="Priority Rules Guide"
+                    >
+                      <Lightbulb className="w-5 h-5" />
+                      <span className="text-sm font-medium">Tips & Rules</span>
+                    </button>
+                    <GameControlsHeaderWrapper />
+                  </div>
                 ) : undefined
               }
             />
@@ -128,6 +141,115 @@ export default function DashboardScreen() {
             {renderActiveScreen()}
           </div>
         </GameStateProvider>
+      )}
+
+      {/* Help Sidebar - Only show on manual-game screen */}
+      {activeScreen === "manual-game" && showHelpSidebar && (
+        <div className="fixed inset-y-0 right-0 z-50 w-96 bg-white shadow-2xl border-l border-gray-200 transform transition-transform">
+          <div className="flex flex-col h-full">
+            {/* Sidebar Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-yellow-50">
+              <div className="flex items-center gap-3">
+                <Lightbulb className="w-6 h-6 text-yellow-600" />
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Priority Rules Guide
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowHelpSidebar(false)}
+                className="p-2 hover:bg-yellow-100 rounded-lg transition-colors"
+                title="Close guide"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Sidebar Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
+                {/* Quick Tip */}
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-blue-900 mb-2">
+                        Quick Tip
+                      </h4>
+                      <p className="text-blue-800 text-sm">
+                        Each department has its own priority rule dropdown.
+                        Change them to see how different scheduling strategies
+                        affect order flow.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Priority Rules */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-800">
+                    Priority Rules Explained
+                  </h4>
+
+                  <div className="space-y-4">
+                    <div className="p-4 border border-gray-200 rounded-lg">
+                      <h5 className="font-semibold text-gray-800 mb-2">
+                        FIFO (First In, First Out)
+                      </h5>
+                      <p className="text-gray-700 text-sm">
+                        {getPriorityRuleDescription("FIFO")}
+                      </p>
+                    </div>
+
+                    <div className="p-4 border border-gray-200 rounded-lg">
+                      <h5 className="font-semibold text-gray-800 mb-2">
+                        EDD (Earliest Due Date)
+                      </h5>
+                      <p className="text-gray-700 text-sm">
+                        {getPriorityRuleDescription("EDD")}
+                      </p>
+                    </div>
+
+                    <div className="p-4 border border-gray-200 rounded-lg">
+                      <h5 className="font-semibold text-gray-800 mb-2">
+                        SPT (Shortest Processing Time)
+                      </h5>
+                      <p className="text-gray-700 text-sm">
+                        {getPriorityRuleDescription("SPT")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Tips */}
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-semibold text-green-900 mb-2">
+                    Educational Tips
+                  </h4>
+                  <ul className="text-green-800 text-sm space-y-2">
+                    <li>
+                      • Try different combinations of rules across departments
+                    </li>
+                    <li>• Watch how queue ordering changes in real-time</li>
+                    <li>
+                      • Notice the impact on delivery dates and priorities
+                    </li>
+                    <li>
+                      • Experiment with high-priority vs. low-priority orders
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sidebar Overlay */}
+      {activeScreen === "manual-game" && showHelpSidebar && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setShowHelpSidebar(false)}
+        />
       )}
     </div>
   );

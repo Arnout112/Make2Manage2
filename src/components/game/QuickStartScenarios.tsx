@@ -1,124 +1,129 @@
-import { Play, BookOpen, Target, Zap, Clock } from 'lucide-react'
-import type { GameSettings } from '../types'
+import { Play, BookOpen, Target, Zap, Clock } from "lucide-react";
+import type { GameSettings } from "../../types";
 
 interface QuickStartScenariosProps {
-  onSelectScenario: (settings: GameSettings) => void
-  onClose: () => void
-  isOpen: boolean
+  onSelectScenario: (settings: GameSettings) => void;
+  onClose: () => void;
+  isOpen: boolean;
 }
 
 interface Scenario {
-  id: string
-  name: string
-  description: string
-  icon: React.ComponentType<{size?: number, className?: string}>
-  settings: GameSettings
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  learningObjectives: string[]
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  settings: GameSettings;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  learningObjectives: string[];
 }
 
 const scenarios: Scenario[] = [
   {
-    id: 'tutorial',
-    name: 'Tutorial Mode',
-    description: 'Perfect for first-time players. Slow pace, guided experience.',
+    id: "tutorial",
+    name: "Tutorial Mode",
+    description:
+      "Perfect for first-time players. Slow pace, guided experience.",
     icon: BookOpen,
-    difficulty: 'beginner',
+    difficulty: "beginner",
     settings: {
       sessionDuration: 15,
       gameSpeed: 1,
-      orderGenerationRate: 'low',
-      complexityLevel: 'beginner',
+      orderGenerationRate: "low",
+      complexityLevel: "beginner",
       enableEvents: false,
       enableAdvancedRouting: false,
-      randomSeed: 'tutorial-seed'
+      randomSeed: "tutorial-seed",
     },
     learningObjectives: [
-      'Understanding order flow',
-      'Basic department operations',
-      'Queue management concepts'
-    ]
+      "Understanding order flow",
+      "Basic department operations",
+      "Queue management concepts",
+    ],
   },
   {
-    id: 'balanced',
-    name: 'Balanced Production',
-    description: 'Standard scenario with moderate complexity and events.',
+    id: "balanced",
+    name: "Balanced Production",
+    description: "Standard scenario with moderate complexity and events.",
     icon: Target,
-    difficulty: 'intermediate',
+    difficulty: "intermediate",
     settings: {
       sessionDuration: 30,
       gameSpeed: 1,
-      orderGenerationRate: 'medium',
-      complexityLevel: 'intermediate',
+      orderGenerationRate: "medium",
+      complexityLevel: "intermediate",
       enableEvents: true,
       enableAdvancedRouting: true,
-      randomSeed: 'balanced-seed'
+      randomSeed: "balanced-seed",
     },
     learningObjectives: [
-      'Balancing efficiency vs quality',
-      'Handling random events',
-      'Performance optimization'
-    ]
+      "Balancing efficiency vs quality",
+      "Handling random events",
+      "Performance optimization",
+    ],
   },
   {
-    id: 'rush-mode',
-    name: 'Rush Mode',
-    description: 'High-speed, high-volume production with tight deadlines.',
+    id: "rush-mode",
+    name: "Rush Mode",
+    description: "High-speed, high-volume production with tight deadlines.",
     icon: Zap,
-    difficulty: 'advanced',
+    difficulty: "advanced",
     settings: {
       sessionDuration: 15,
       gameSpeed: 2,
-      orderGenerationRate: 'high',
-      complexityLevel: 'advanced',
+      orderGenerationRate: "high",
+      complexityLevel: "advanced",
       enableEvents: true,
       enableAdvancedRouting: true,
-      randomSeed: 'rush-seed'
+      randomSeed: "rush-seed",
     },
     learningObjectives: [
-      'Crisis management',
-      'Rapid decision making',
-      'Bottleneck identification'
-    ]
+      "Crisis management",
+      "Rapid decision making",
+      "Bottleneck identification",
+    ],
   },
   {
-    id: 'endurance',
-    name: 'Endurance Challenge',
-    description: 'Long session to test sustained performance over time.',
+    id: "endurance",
+    name: "Endurance Challenge",
+    description: "Long session to test sustained performance over time.",
     icon: Clock,
-    difficulty: 'advanced',
+    difficulty: "advanced",
     settings: {
       sessionDuration: 60,
       gameSpeed: 2,
-      orderGenerationRate: 'medium',
-      complexityLevel: 'advanced',
+      orderGenerationRate: "medium",
+      complexityLevel: "advanced",
       enableEvents: true,
       enableAdvancedRouting: true,
-      randomSeed: 'endurance-seed'
+      randomSeed: "endurance-seed",
     },
     learningObjectives: [
-      'Long-term planning',
-      'Sustained performance',
-      'Resource management'
-    ]
-  }
-]
+      "Long-term planning",
+      "Sustained performance",
+      "Resource management",
+    ],
+  },
+];
 
-export default function QuickStartScenarios({ onSelectScenario, onClose, isOpen }: QuickStartScenariosProps) {
-  if (!isOpen) return null
+export default function QuickStartScenarios({
+  onSelectScenario,
+  onClose,
+  isOpen,
+}: QuickStartScenariosProps) {
+  if (!isOpen) return null;
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'beginner':
-        return 'text-green-600 bg-green-100'
-      case 'intermediate':
-        return 'text-yellow-600 bg-yellow-100'
-      case 'advanced':
-        return 'text-red-600 bg-red-100'
+      case "beginner":
+        return "text-green-600 bg-green-100";
+      case "intermediate":
+        return "text-yellow-600 bg-yellow-100";
+      case "advanced":
+        return "text-red-600 bg-red-100";
       default:
-        return 'text-gray-600 bg-gray-100'
+        return "text-gray-600 bg-gray-100";
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -137,13 +142,14 @@ export default function QuickStartScenarios({ onSelectScenario, onClose, isOpen 
         </div>
 
         <p className="text-gray-600 mb-8">
-          Choose a pre-configured scenario to jump right into learning. Each scenario is designed 
-          to teach specific aspects of make-to-order production planning.
+          Choose a pre-configured scenario to jump right into learning. Each
+          scenario is designed to teach specific aspects of make-to-order
+          production planning.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {scenarios.map((scenario) => {
-            const Icon = scenario.icon
+            const Icon = scenario.icon;
             return (
               <div
                 key={scenario.id}
@@ -152,10 +158,19 @@ export default function QuickStartScenarios({ onSelectScenario, onClose, isOpen 
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <Icon size={24} className="text-blue-600 group-hover:text-blue-700" />
-                    <h3 className="text-lg font-semibold text-gray-800">{scenario.name}</h3>
+                    <Icon
+                      size={24}
+                      className="text-blue-600 group-hover:text-blue-700"
+                    />
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {scenario.name}
+                    </h3>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getDifficultyColor(scenario.difficulty)}`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getDifficultyColor(
+                      scenario.difficulty
+                    )}`}
+                  >
                     {scenario.difficulty}
                   </span>
                 </div>
@@ -163,10 +178,15 @@ export default function QuickStartScenarios({ onSelectScenario, onClose, isOpen 
                 <p className="text-gray-600 mb-4">{scenario.description}</p>
 
                 <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Learning Objectives:</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    Learning Objectives:
+                  </h4>
                   <ul className="space-y-1">
                     {scenario.learningObjectives.map((objective, index) => (
-                      <li key={index} className="text-sm text-gray-600 flex items-center space-x-2">
+                      <li
+                        key={index}
+                        className="text-sm text-gray-600 flex items-center space-x-2"
+                      >
                         <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
                         <span>{objective}</span>
                       </li>
@@ -176,16 +196,20 @@ export default function QuickStartScenarios({ onSelectScenario, onClose, isOpen 
 
                 <div className="grid grid-cols-2 gap-4 text-xs text-gray-500 border-t border-gray-200 pt-4">
                   <div>
-                    <span className="font-medium">Duration:</span> {scenario.settings.sessionDuration}min
+                    <span className="font-medium">Duration:</span>{" "}
+                    {scenario.settings.sessionDuration}min
                   </div>
                   <div>
-                    <span className="font-medium">Speed:</span> {scenario.settings.gameSpeed}x
+                    <span className="font-medium">Speed:</span>{" "}
+                    {scenario.settings.gameSpeed}x
                   </div>
                   <div>
-                    <span className="font-medium">Complexity:</span> {scenario.settings.complexityLevel}
+                    <span className="font-medium">Complexity:</span>{" "}
+                    {scenario.settings.complexityLevel}
                   </div>
                   <div>
-                    <span className="font-medium">Events:</span> {scenario.settings.enableEvents ? 'On' : 'Off'}
+                    <span className="font-medium">Events:</span>{" "}
+                    {scenario.settings.enableEvents ? "On" : "Off"}
                   </div>
                 </div>
 
@@ -195,7 +219,7 @@ export default function QuickStartScenarios({ onSelectScenario, onClose, isOpen 
                   </button>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
 
@@ -209,5 +233,5 @@ export default function QuickStartScenarios({ onSelectScenario, onClose, isOpen 
         </div>
       </div>
     </div>
-  )
+  );
 }

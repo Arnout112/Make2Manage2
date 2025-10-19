@@ -21,7 +21,7 @@ export default function AnalyticsScreen() {
     const sharedState = useSharedGameState();
     gameState = sharedState.gameState;
   } catch (error) {
-    console.error('AnalyticsScreen: Error accessing shared game state:', error);
+    console.error("AnalyticsScreen: Error accessing shared game state:", error);
     gameState = null;
   }
 
@@ -354,7 +354,9 @@ export default function AnalyticsScreen() {
           />
         ) : (
           <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-            <p className="text-yellow-800">Performance dashboard unavailable - no game state</p>
+            <p className="text-yellow-800">
+              Performance dashboard unavailable - no game state
+            </p>
           </div>
         )}
       </div>

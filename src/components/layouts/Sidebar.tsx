@@ -1,4 +1,4 @@
-import { Factory, BarChart3, MousePointer } from "lucide-react";
+import { Factory, BarChart3 } from "lucide-react";
 import type { ScreenType, NavigationScreen } from "../../types";
 
 interface SidebarProps {
@@ -12,11 +12,6 @@ export default function Sidebar({
 }: SidebarProps) {
   const navItems = [
     { id: "game" as NavigationScreen, icon: Factory, title: "Game" },
-    {
-      id: "manual-game" as NavigationScreen,
-      icon: MousePointer,
-      title: "Manual Game",
-    },
     {
       id: "analytics" as NavigationScreen,
       icon: BarChart3,

@@ -1,28 +1,30 @@
-import { TrendingUp, Clock, AlertTriangle, CheckCircle } from 'lucide-react'
-import type { ForecastData, Order } from '../types'
+import { TrendingUp, Clock, AlertTriangle, CheckCircle } from "lucide-react";
+import type { ForecastData, Order } from "../../types";
 
 interface DeliveryForecastProps {
-  forecastData: ForecastData
-  pendingOrders: Order[]
+  forecastData: ForecastData;
+  pendingOrders: Order[];
 }
 
-export default function DeliveryForecast({ forecastData, pendingOrders }: DeliveryForecastProps) {
-  
+export default function DeliveryForecast({
+  forecastData,
+  pendingOrders,
+}: DeliveryForecastProps) {
   const getForecastStatus = (expectedDate: Date, dueDate: Date) => {
-    const buffer = expectedDate.getTime() - dueDate.getTime()
-    if (buffer < 0) return 'late'
-    if (buffer < 30 * 60 * 1000) return 'at-risk' // Less than 30 min buffer
-    return 'on-time'
-  }
+    const buffer = expectedDate.getTime() - dueDate.getTime();
+    if (buffer < 0) return "late";
+    if (buffer < 30 * 60 * 1000) return "at-risk"; // Less than 30 min buffer
+    return "on-time";
+  };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
-  }
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -55,7 +57,7 @@ export default function DeliveryForecast({ forecastData, pendingOrders }: Delive
 
         <div className="text-center p-4 bg-amber-50 rounded-lg">
           <div className="text-2xl font-bold text-amber-600">
-            Dept {forecastData.bottleneckDepartment || 'N/A'}
+            Dept {forecastData.bottleneckDepartment || "N/A"}
           </div>
           <div className="text-sm text-gray-600">Bottleneck</div>
         </div>
@@ -63,60 +65,73 @@ export default function DeliveryForecast({ forecastData, pendingOrders }: Delive
 
       {/* WIP Capacity by Department */}
       <div className="mb-6">
-        <h4 className="text-lg font-semibold text-gray-800 mb-3">WIP Capacity by Department</h4>
+        <h4 className="text-lg font-semibold text-gray-800 mb-3">
+          WIP Capacity by Department
+        </h4>
         <div className="grid grid-cols-4 gap-3">
-          {Object.entries(forecastData.wipCapacity).map(([deptId, capacity]) => (
-            <div key={deptId} className="text-center p-3 bg-gray-50 rounded-lg">
-              <div className="text-lg font-bold text-gray-800">Dept {deptId}</div>
-              <div className="text-sm text-gray-600">{capacity} orders</div>
-            </div>
-          ))}
+          {Object.entries(forecastData.wipCapacity).map(
+            ([deptId, capacity]) => (
+              <div
+                key={deptId}
+                className="text-center p-3 bg-gray-50 rounded-lg"
+              >
+                <div className="text-lg font-bold text-gray-800">
+                  Dept {deptId}
+                </div>
+                <div className="text-sm text-gray-600">{capacity} orders</div>
+              </div>
+            )
+          )}
         </div>
       </div>
 
       {/* Order Delivery Forecasts */}
       <div>
-        <h4 className="text-lg font-semibold text-gray-800 mb-4">Expected Delivery Dates</h4>
+        <h4 className="text-lg font-semibold text-gray-800 mb-4">
+          Expected Delivery Dates
+        </h4>
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {pendingOrders.slice(0, 10).map((order) => {
-            const expectedDate = forecastData.expectedDeliveryDates[order.id]
-            if (!expectedDate) return null
+            const expectedDate = forecastData.expectedDeliveryDates[order.id];
+            if (!expectedDate) return null;
 
-            const status = getForecastStatus(expectedDate, order.dueDate)
+            const status = getForecastStatus(expectedDate, order.dueDate);
             const statusConfig = {
-              'on-time': { 
-                icon: CheckCircle, 
-                color: 'text-green-600', 
-                bg: 'bg-green-50 border-green-200' 
+              "on-time": {
+                icon: CheckCircle,
+                color: "text-green-600",
+                bg: "bg-green-50 border-green-200",
               },
-              'at-risk': { 
-                icon: AlertTriangle, 
-                color: 'text-amber-600', 
-                bg: 'bg-amber-50 border-amber-200' 
+              "at-risk": {
+                icon: AlertTriangle,
+                color: "text-amber-600",
+                bg: "bg-amber-50 border-amber-200",
               },
-              'late': { 
-                icon: AlertTriangle, 
-                color: 'text-red-600', 
-                bg: 'bg-red-50 border-red-200' 
-              }
-            }
+              late: {
+                icon: AlertTriangle,
+                color: "text-red-600",
+                bg: "bg-red-50 border-red-200",
+              },
+            };
 
-            const config = statusConfig[status]
-            const Icon = config.icon
+            const config = statusConfig[status];
+            const Icon = config.icon;
 
             return (
-              <div 
+              <div
                 key={order.id}
                 className={`flex items-center justify-between p-3 rounded-lg border ${config.bg}`}
               >
                 <div className="flex items-center space-x-3">
                   <Icon className={`w-4 h-4 ${config.color}`} />
-                  <span className="font-mono text-sm font-semibold">{order.id}</span>
+                  <span className="font-mono text-sm font-semibold">
+                    {order.id}
+                  </span>
                   <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                    {order.route.join('→')}
+                    {order.route.join("→")}
                   </span>
                 </div>
-                
+
                 <div className="text-right">
                   <div className="text-sm font-medium">
                     Expected: {formatDate(expectedDate)}
@@ -126,22 +141,23 @@ export default function DeliveryForecast({ forecastData, pendingOrders }: Delive
                   </div>
                 </div>
               </div>
-            )
+            );
           })}
-          
+
           {pendingOrders.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               No pending orders to forecast
             </div>
           )}
-          
+
           {pendingOrders.length > 10 && (
             <div className="text-center py-2 text-gray-500 text-sm">
-              Showing first 10 orders. {pendingOrders.length - 10} more orders in queue.
+              Showing first 10 orders. {pendingOrders.length - 10} more orders
+              in queue.
             </div>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }

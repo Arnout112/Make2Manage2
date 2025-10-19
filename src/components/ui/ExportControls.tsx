@@ -1,13 +1,15 @@
-import { Download, FileText, Database } from 'lucide-react'
-import type { SessionLog, GameState } from '../types'
+import { Download, FileText, Database } from "lucide-react";
+import type { SessionLog, GameState } from "../../types";
 
 interface ExportControlsProps {
-  gameState: GameState
-  onExport: (format: 'csv' | 'json') => void
+  gameState: GameState;
+  onExport: (format: "csv" | "json") => void;
 }
 
-export default function ExportControls({ gameState, onExport }: ExportControlsProps) {
-  
+export default function ExportControls({
+  gameState,
+  onExport,
+}: ExportControlsProps) {
   const generateSessionData = () => {
     const sessionLog: SessionLog = {
       sessionId: gameState.session.id,
@@ -16,71 +18,84 @@ export default function ExportControls({ gameState, onExport }: ExportControlsPr
       settings: gameState.session.settings,
       events: gameState.gameEvents,
       finalPerformance: gameState.performance,
-      decisions: gameState.decisions || []
-    }
-    return sessionLog
-  }
+      decisions: gameState.decisions || [],
+    };
+    return sessionLog;
+  };
 
   const exportToCSV = () => {
-    const sessionData = generateSessionData()
-    
+    const sessionData = generateSessionData();
+
     // Create CSV content
     const headers = [
-      'event_type',
-      'timestamp',
-      'order_id',
-      'decision_id', 
-      'department_id',
-      'message',
-      'severity',
-      'lead_time',
-      'on_time_rate',
-      'throughput',
-      'utilization_avg'
-    ]
+      "event_type",
+      "timestamp",
+      "order_id",
+      "decision_id",
+      "department_id",
+      "message",
+      "severity",
+      "lead_time",
+      "on_time_rate",
+      "throughput",
+      "utilization_avg",
+    ];
 
-    const rows = sessionData.events.map(event => [
+    const rows = sessionData.events.map((event) => [
       event.type,
       event.timestamp.toISOString(),
-      event.orderId || '',
-      event.decisionId || '',
-      event.departmentId || '',
+      event.orderId || "",
+      event.decisionId || "",
+      event.departmentId || "",
       `"${event.message.replace(/"/g, '""')}"`, // Escape quotes
       event.severity,
-      event.kpiSnapshot?.averageLeadTime || '',
-      event.kpiSnapshot?.onTimeDeliveryRate || '',
-      event.kpiSnapshot?.totalThroughput || '',
-      event.kpiSnapshot?.utilizationRates ? 
-        Object.values(event.kpiSnapshot.utilizationRates).reduce((a, b) => a + b, 0) / Object.values(event.kpiSnapshot.utilizationRates).length : ''
-    ])
+      event.kpiSnapshot?.averageLeadTime || "",
+      event.kpiSnapshot?.onTimeDeliveryRate || "",
+      event.kpiSnapshot?.totalThroughput || "",
+      event.kpiSnapshot?.utilizationRates
+        ? Object.values(event.kpiSnapshot.utilizationRates).reduce(
+            (a, b) => a + b,
+            0
+          ) / Object.values(event.kpiSnapshot.utilizationRates).length
+        : "",
+    ]);
 
-    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n')
-    
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
     // Download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `make2manage_session_${sessionData.sessionId}_${new Date().toISOString().split('T')[0]}.csv`
-    link.click()
-    
-    onExport('csv')
-  }
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `make2manage_session_${sessionData.sessionId}_${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
+    link.click();
+
+    onExport("csv");
+  };
 
   const exportToJSON = () => {
-    const sessionData = generateSessionData()
-    
+    const sessionData = generateSessionData();
+
     // Create formatted JSON
-    const jsonContent = JSON.stringify(sessionData, null, 2)
-    
+    const jsonContent = JSON.stringify(sessionData, null, 2);
+
     // Download file
-    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `make2manage_session_${sessionData.sessionId}_${new Date().toISOString().split('T')[0]}.json`
-    link.click()
-    
-    onExport('json')
-  }
+    const blob = new Blob([jsonContent], {
+      type: "application/json;charset=utf-8;",
+    });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `make2manage_session_${sessionData.sessionId}_${
+      new Date().toISOString().split("T")[0]
+    }.json`;
+    link.click();
+
+    onExport("json");
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -113,9 +128,15 @@ export default function ExportControls({ gameState, onExport }: ExportControlsPr
       </div>
 
       <div className="mt-4 text-xs text-gray-500">
-        <p><strong>CSV:</strong> event_type, timestamp, order_id, decision_id, KPI_snapshot</p>
-        <p><strong>JSON:</strong> Complete session log with all events and performance data</p>
+        <p>
+          <strong>CSV:</strong> event_type, timestamp, order_id, decision_id,
+          KPI_snapshot
+        </p>
+        <p>
+          <strong>JSON:</strong> Complete session log with all events and
+          performance data
+        </p>
       </div>
     </div>
-  )
+  );
 }

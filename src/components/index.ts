@@ -12,7 +12,6 @@ export { default as CapacityPlanner } from "./game/CapacityPlanner";
 export { default as CustomerOrderManager } from "./game/CustomerOrderManager";
 export { default as DeliveryForecast } from "./game/DeliveryForecast";
 export { default as GameControls } from "./game/GameControls";
-export { default as LearningAnalytics } from "./game/LearningAnalytics";
 export { default as OrderProcessingGuide } from "./game/OrderProcessingGuide";
 export { default as PerformanceDashboard } from "./game/PerformanceDashboard";
 export { default as QuickStartScenarios } from "./game/QuickStartScenarios";
