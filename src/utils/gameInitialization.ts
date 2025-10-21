@@ -588,8 +588,8 @@ export const generateScheduledOrders = (
     settings.complexityLevel === "beginner"
       ? 8
       : settings.complexityLevel === "intermediate"
-      ? 12
-      : 16;
+      ? 18 // Increased from 12 to 18 for more FIFO decision practice
+      : 24; // Increased from 16 to 24 for challenging priority management
 
   for (let i = 0; i < orderCount; i++) {
     let releaseTime: number;

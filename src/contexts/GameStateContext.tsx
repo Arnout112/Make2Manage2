@@ -25,6 +25,8 @@ interface GameStateContextType {
   redoLastDecision: () => void;
   clearDecisionHistory: () => void;
   optimizeOrderRoute: (orderId: string, newRoute: number[]) => void;
+  completeProcessing: (departmentId: number) => void;
+  startProcessing: (departmentId: number) => void;
 }
 
 const GameStateContext = createContext<GameStateContextType | null>(null);
@@ -55,6 +57,8 @@ export function GameStateProvider({
       redoLastDecision: gameSimulation.redoLastDecision,
       clearDecisionHistory: gameSimulation.clearDecisionHistory,
       optimizeOrderRoute: gameSimulation.optimizeOrderRoute,
+      completeProcessing: gameSimulation.completeProcessing,
+      startProcessing: gameSimulation.startProcessing,
     };
 
     return (

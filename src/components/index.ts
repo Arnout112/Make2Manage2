@@ -22,4 +22,6 @@ export { default as RouteOptimizer } from "./game/RouteOptimizer";
 export { default as AccessibilityControls } from "./ui/AccessibilityControls";
 export { default as ExportControls } from "./ui/ExportControls";
 export { default as GameSettingsModal } from "./ui/GameSettingsModal";
+export { default as OrderColorDot } from "./ui/OrderColorDot";
+export { default as RouteProgressIndicator } from "./ui/RouteProgressIndicator";
 export { default as UndoRedoControls } from "./ui/UndoRedoControls";

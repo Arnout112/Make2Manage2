@@ -1,22 +1,39 @@
 import { useState } from "react";
-import { Package, Factory, ShoppingCart, Play, XCircle } from "lucide-react";
+import {
+  Package,
+  Factory,
+  ShoppingCart,
+  Play,
+  XCircle,
+  CheckCircle,
+} from "lucide-react";
 import type { Order } from "../types";
 import {
   RandomEventsDisplay,
   UndoRedoControls,
   RouteOptimizer,
   CapacityPlanner,
+  RouteProgressIndicator,
+  OrderColorDot,
 } from "../components";
 import { useSharedGameState } from "../contexts/GameStateContext";
 import {
   sortOrdersByPriorityRule,
   getPriorityRuleInsights,
 } from "../utils/priorityRules";
+import { getOrderColor } from "../utils/orderColors";
+import {
+  getPriorityTextColor,
+  getPriorityLabel,
+} from "../utils/priorityColors";
 import type { PriorityRule } from "../types";
 
 export default function GameScreen() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+  const [activeOrderTab, setActiveOrderTab] = useState<"pending" | "completed">(
+    "pending"
+  );
   const [departmentPriorityRules, setDepartmentPriorityRules] = useState<{
     [key: number]: PriorityRule;
   }>({
@@ -37,7 +54,9 @@ export default function GameScreen() {
     rebalanceWorkload,
     undoLastDecision,
     redoLastDecision,
-    clearDecisionHistory;
+    clearDecisionHistory,
+    completeProcessing,
+    startProcessing;
 
   try {
     const sharedState = useSharedGameState();
@@ -49,6 +68,8 @@ export default function GameScreen() {
     undoLastDecision = sharedState.undoLastDecision;
     redoLastDecision = sharedState.redoLastDecision;
     clearDecisionHistory = sharedState.clearDecisionHistory;
+    completeProcessing = sharedState.completeProcessing;
+    startProcessing = sharedState.startProcessing;
   } catch (error) {
     return (
       <div className="flex-1 p-8 bg-red-50">
@@ -150,6 +171,20 @@ export default function GameScreen() {
     if (!dept || !dept.inProcess) return;
 
     const processingOrder = dept.inProcess;
+
+    // Check if processing timer has finished
+    const timeRemaining = processingOrder.processingTimeRemaining || 0;
+    if (timeRemaining > 0) {
+      alert(
+        `⏱️ Processing not yet complete!\n\n` +
+          `Order ${processingOrder.id} still needs ${formatTime(
+            timeRemaining
+          )} to finish processing in ${dept.name}.\n\n` +
+          `Please wait for the timer to reach 00:00 before completing.`
+      );
+      return;
+    }
+
     console.log(
       `Manually completing processing of order ${processingOrder.id} in ${dept.name}`
     );
@@ -169,15 +204,9 @@ export default function GameScreen() {
 
     if (isLastStep) {
       // Order is fully completed - mark as done
-      console.log(
-        `Order ${processingOrder.id} has completed all manufacturing steps`
-      );
       alert(
         `🎉 Order ${processingOrder.id} has completed ALL manufacturing steps!\n\nThis order is now FINISHED and will be moved to completed orders.`
       );
-
-      // Complete the order - this should move it to completed orders
-      scheduleOrder(processingOrder.id, departmentId, new Date());
     } else {
       // Order needs more processing - show which departments are remaining
       const completedSteps = processingOrder.route.slice(
@@ -202,22 +231,16 @@ export default function GameScreen() {
         })
         .join(" → ");
 
-      console.log(
-        `Order ${processingOrder.id} completed ${dept.name}. Remaining: ${remainingDeptNames}`
-      );
-
       alert(
         `✅ Order ${processingOrder.id} completed: ${dept.name}\n\n` +
           `✓ Completed: ${completedDeptNames}\n` +
           `→ Still needs: ${remainingDeptNames}\n\n` +
           `The order will return to Order Management so you can manually assign it to the next department.`
       );
-
-      // Complete current step - the order should return to pending orders automatically
-      // We'll complete processing at this department, which should trigger the order
-      // to move back to pending status for manual re-assignment
-      scheduleOrder(processingOrder.id, departmentId, new Date());
     }
+
+    // Use the proper complete processing function
+    completeProcessing(departmentId);
   };
 
   const handleStartProcessing = (departmentId: number) => {
@@ -230,8 +253,8 @@ export default function GameScreen() {
       `Manually starting processing of order ${nextOrder.id} in ${dept.name}`
     );
 
-    // Move the order from queue to processing
-    scheduleOrder(nextOrder.id, departmentId, new Date());
+    // Start processing the next order in the queue
+    startProcessing(departmentId);
 
     // Show educational feedback
     alert(
@@ -275,13 +298,14 @@ export default function GameScreen() {
         {/* Left Side - Order Management */}
         <div className="xl:col-span-2">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 min-h-[500px] flex flex-col">
+            {/* Header with Tabs */}
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-xl font-semibold text-gray-800">
-                  Order Management ({gameState.pendingOrders.length} pending)
+                  Order Management
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Customer orders waiting for production planning and release
+                  Track orders from request to completion
                 </p>
               </div>
               <div className="flex items-center space-x-4">
@@ -290,170 +314,304 @@ export default function GameScreen() {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex items-center justify-between mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-blue-900">
-                  Quick Actions
-                </p>
-                <p className="text-xs text-blue-700">
-                  Approve and release customer orders for production
-                </p>
+            {/* Order Management Tabs */}
+            <div className="mb-4">
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  <button
+                    onClick={() => setActiveOrderTab("pending")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeOrderTab === "pending"
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Pending Orders ({gameState.pendingOrders.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveOrderTab("completed")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeOrderTab === "completed"
+                        ? "border-green-500 text-green-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Completed Orders ({gameState.completedOrders.length})
+                  </button>
+                </nav>
               </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    // Release all orders that can fit in factory capacity
-                    const availableCapacity = gameState.departments.reduce(
-                      (total, dept) =>
-                        total + (dept.maxQueueSize - dept.wipCount),
-                      0
-                    );
-                    const ordersToRelease = Math.min(
-                      gameState.pendingOrders.length,
-                      availableCapacity,
-                      3
-                    );
-                    for (let i = 0; i < ordersToRelease; i++) {
-                      if (gameState.pendingOrders[i]) {
-                        handleReleaseOrder(gameState.pendingOrders[i].id);
+            </div>
+
+            {/* Tab Content */}
+            {activeOrderTab === "pending" && (
+              <>
+                {/* Quick Actions */}
+                <div className="flex items-center justify-between mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">
+                      Quick Actions
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Approve and release customer orders for production
+                    </p>
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => {
+                        // Release all orders that can fit in factory capacity
+                        const availableCapacity = gameState.departments.reduce(
+                          (total, dept) =>
+                            total + (dept.maxQueueSize - dept.wipCount),
+                          0
+                        );
+                        const ordersToRelease = Math.min(
+                          gameState.pendingOrders.length,
+                          availableCapacity,
+                          3
+                        );
+                        for (let i = 0; i < ordersToRelease; i++) {
+                          if (gameState.pendingOrders[i]) {
+                            handleReleaseOrder(gameState.pendingOrders[i].id);
+                          }
+                        }
+                      }}
+                      disabled={
+                        gameState.pendingOrders.length === 0 ||
+                        gameState.session.status !== "running" ||
+                        gameState.departments.every(
+                          (dept) => dept.wipCount >= dept.maxQueueSize
+                        )
                       }
-                    }
-                  }}
-                  disabled={
-                    gameState.pendingOrders.length === 0 ||
-                    gameState.session.status !== "running" ||
-                    gameState.departments.every(
-                      (dept) => dept.wipCount >= dept.maxQueueSize
-                    )
-                  }
-                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors font-medium text-sm"
-                >
-                  <Package size={16} />
-                  <span>Batch Release (Up to 3)</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="text-sm text-gray-600 mb-3 space-y-1">
-              <div>
-                <strong>Instructions:</strong> Each customer order needs to be{" "}
-                <strong>released to production</strong> before manufacturing can
-                begin. Click "Release to Production" to approve an order and
-                send it to the first department in its route.
-              </div>
-              {gameState.session.settings.manualMode && (
-                <div className="text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
-                  <strong>Manual Mode:</strong> You can also{" "}
-                  <strong>drag orders</strong> directly to departments to assign
-                  them manually. Look for the green drop zones!
+                      className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors font-medium text-sm"
+                    >
+                      <Package size={16} />
+                      <span>Batch Release (Up to 3)</span>
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Compact Grid Layout - Multiple rows of cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 flex-1 overflow-y-auto min-h-0">
-              {gameState.pendingOrders.slice(0, 24).map((order) => (
-                <div
-                  key={order.id}
-                  draggable
-                  onDragStart={() => handleDragStart(order)}
-                  onDragEnd={handleDragEnd}
-                  className={`p-2 bg-gray-50 rounded-lg border-2 transition-all duration-200 ${
-                    draggedOrder?.id === order.id
-                      ? "opacity-50 scale-95 rotate-2 shadow-lg border-blue-300"
-                      : "hover:bg-gray-100 hover:shadow-md hover:border-blue-200 cursor-grab active:cursor-grabbing hover:scale-105"
-                  } relative group`}
-                >
-                  {/* Compact Header with ID, Priority, Due Date, and SLA Status */}
-                  <div className="mb-1.5">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="font-mono text-xs font-semibold text-gray-800">
-                        {order.id}
-                      </span>
-                      <span
-                        className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
-                          order
-                        )}`}
+                <div className="text-sm text-gray-600 mb-3 space-y-1">
+                  <div>
+                    <strong>Instructions:</strong> Each customer order needs to
+                    be <strong>released to production</strong> before
+                    manufacturing can begin. Click "Release to Production" to
+                    approve an order and send it to the first department in its
+                    route.
+                  </div>
+                  {gameState.session.settings.manualMode && (
+                    <div className="text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
+                      <strong>Manual Mode:</strong> You can also{" "}
+                      <strong>drag orders</strong> directly to departments to
+                      assign them manually. Look for the green drop zones!
+                    </div>
+                  )}
+                </div>
+
+                {/* Pending Orders Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 flex-1 overflow-y-auto min-h-0">
+                  {gameState.pendingOrders.slice(0, 24).map((order) => {
+                    const orderColor = getOrderColor(order.id);
+                    return (
+                      <div
+                        key={order.id}
+                        draggable
+                        onDragStart={() => handleDragStart(order)}
+                        onDragEnd={handleDragEnd}
+                        className={`p-2 rounded-lg border border-gray-200 bg-white transition-all duration-200 ${
+                          draggedOrder?.id === order.id
+                            ? "opacity-50 scale-95 rotate-2 shadow-lg"
+                            : "hover:shadow-md cursor-grab active:cursor-grabbing hover:scale-105"
+                        } relative group`}
+                        style={{
+                          borderTopColor: orderColor.dot,
+                          borderTopWidth: "4px",
+                        }}
                       >
-                        {order.slaStatus === "on-track"
-                          ? "OK"
-                          : order.slaStatus === "at-risk"
-                          ? "RISK"
-                          : "LATE"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center space-x-1">
-                        <span
-                          className={`px-1 py-0.5 rounded font-medium ${
-                            order.priority === "urgent"
-                              ? "bg-red-100 text-red-800"
-                              : order.priority === "high"
-                              ? "bg-orange-100 text-orange-800"
-                              : order.priority === "normal"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {order.priority === "urgent"
-                            ? "URG"
-                            : order.priority === "high"
-                            ? "HIGH"
-                            : order.priority === "normal"
-                            ? "NORM"
-                            : "LOW"}
-                        </span>
-                        {order.isHalfOrder && (
-                          <span className="bg-purple-100 text-purple-800 px-1 py-0.5 rounded font-medium">
-                            HALF
-                          </span>
-                        )}
+                        {/* Color Dot + Compact Header */}
+                        <div className="mb-1.5">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <div className="flex items-center space-x-2">
+                              <OrderColorDot orderId={order.id} size="sm" />
+                              <span className="font-mono text-xs font-semibold text-gray-800">
+                                {order.id}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
+                                order
+                              )}`}
+                            >
+                              {order.slaStatus === "on-track"
+                                ? "OK"
+                                : order.slaStatus === "at-risk"
+                                ? "RISK"
+                                : "LATE"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center space-x-1">
+                              <span
+                                className={`px-1 py-0.5 rounded font-medium ${
+                                  order.priority === "urgent"
+                                    ? "bg-red-100 text-red-800"
+                                    : order.priority === "high"
+                                    ? "bg-orange-100 text-orange-800"
+                                    : order.priority === "normal"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-green-50 text-green-700"
+                                }`}
+                              >
+                                {getPriorityLabel(order.priority)}
+                              </span>
+                              {order.isHalfOrder && (
+                                <span className="bg-purple-100 text-purple-800 px-1 py-0.5 rounded font-medium">
+                                  HALF
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-gray-600">
+                              {order.dueDate.toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Route Progress */}
+                        <div className="mb-1.5">
+                          <RouteProgressIndicator order={order} size="sm" />
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="space-y-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReleaseOrder(order.id);
+                            }}
+                            disabled={gameState.session.status !== "running"}
+                            className="w-full flex items-center justify-center space-x-1 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                          >
+                            <Play size={10} />
+                            <span>Release</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openOrderDetail(order);
+                            }}
+                            className="w-full text-xs text-gray-500 hover:text-gray-700 py-1"
+                          >
+                            View Details
+                          </button>
+                        </div>
                       </div>
-                      <span className="text-gray-600">
-                        {order.dueDate.toLocaleDateString()}
-                      </span>
+                    );
+                  })}
+                  {gameState.pendingOrders.length === 0 && (
+                    <div className="col-span-full text-gray-500 text-center py-8">
+                      No incoming orders
                     </div>
-                  </div>
+                  )}
+                </div>
+              </>
+            )}
 
-                  {/* Route */}
-                  <div className="mb-1.5">
-                    <div className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">
-                      {order.route.join("→")}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons - Stacked vertically for compact layout */}
-                  <div className="space-y-1">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleReleaseOrder(order.id);
-                      }}
-                      disabled={gameState.session.status !== "running"}
-                      className="w-full flex items-center justify-center space-x-1 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-                    >
-                      <Play size={10} />
-                      <span>Release</span>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openOrderDetail(order);
-                      }}
-                      className="w-full text-xs text-gray-500 hover:text-gray-700 py-1"
-                    >
-                      View Details
-                    </button>
+            {/* Completed Orders Tab */}
+            {activeOrderTab === "completed" && (
+              <>
+                <div className="text-sm text-gray-600 mb-3">
+                  <div>
+                    <strong>Completed Orders:</strong> Track your manufacturing
+                    success and learn from completed orders.
                   </div>
                 </div>
-              ))}
-              {gameState.pendingOrders.length === 0 && (
-                <div className="col-span-full text-gray-500 text-center py-8">
-                  No incoming orders
+
+                {/* Completed Orders Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 flex-1 overflow-y-auto min-h-0">
+                  {gameState.completedOrders
+                    .slice(-24)
+                    .reverse()
+                    .map((order) => {
+                      const orderColor = getOrderColor(order.id);
+                      return (
+                        <div
+                          key={order.id}
+                          onClick={() => openOrderDetail(order)}
+                          className="p-2 rounded-lg border border-gray-200 bg-white cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105"
+                          style={{
+                            borderTopColor: orderColor.dot,
+                            borderTopWidth: "4px",
+                          }}
+                        >
+                          {/* Color Dot + Header */}
+                          <div className="mb-1.5">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <div className="flex items-center space-x-2">
+                                <OrderColorDot orderId={order.id} size="sm" />
+                                <span className="font-mono text-xs font-semibold text-gray-800">
+                                  {order.id}
+                                </span>
+                              </div>
+                              <span
+                                className={`text-xs px-1 py-0.5 rounded text-white font-medium ${
+                                  order.status === "completed-on-time"
+                                    ? "bg-green-500"
+                                    : "bg-amber-500"
+                                }`}
+                              >
+                                {order.status === "completed-on-time"
+                                  ? "ON TIME"
+                                  : "LATE"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="flex items-center space-x-1">
+                                <span
+                                  className={`px-1 py-0.5 rounded font-medium ${
+                                    order.priority === "urgent"
+                                      ? "bg-red-100 text-red-800"
+                                      : order.priority === "high"
+                                      ? "bg-orange-100 text-orange-800"
+                                      : order.priority === "normal"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-green-50 text-green-700"
+                                  }`}
+                                >
+                                  {getPriorityLabel(order.priority)}
+                                </span>
+                                <span className="text-gray-600">
+                                  Lead: {order.actualLeadTime || 0}min
+                                </span>
+                              </div>
+                              <span className="text-gray-600">
+                                {order.completedAt?.toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Route Progress (All completed) */}
+                          <div className="mb-1.5">
+                            <RouteProgressIndicator order={order} size="sm" />
+                          </div>
+
+                          {/* Customer */}
+                          <div className="text-xs text-gray-600 text-center">
+                            {order.customerName}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {gameState.completedOrders.length === 0 && (
+                    <div className="col-span-full text-gray-500 text-center py-8">
+                      <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>No completed orders yet</p>
+                      <p className="text-sm">
+                        Start processing orders to see them here!
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -576,27 +734,119 @@ export default function GameScreen() {
                   </div>
 
                   {/* Currently Processing Order */}
-                  {dept.inProcess && (
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-blue-900">
-                          Processing: {dept.inProcess.id}
-                        </span>
-                        <span className="text-xs text-blue-700">
-                          {formatTime(dept.inProcess.processingTimeRemaining)}
-                        </span>
-                      </div>
-                      <div className="text-xs text-blue-700">
-                        Priority: {dept.inProcess.priority}
-                      </div>
-                      <button
-                        onClick={() => handleCompleteProcessing(dept.id)}
-                        className="mt-2 w-full bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-blue-700 transition-colors"
-                      >
-                        Complete Processing
-                      </button>
-                    </div>
-                  )}
+                  {dept.inProcess &&
+                    (() => {
+                      const orderColor = getOrderColor(dept.inProcess.id);
+                      return (
+                        <div
+                          className={`mb-4 p-3 border rounded-lg transition-all ${
+                            (dept.inProcess.processingTimeRemaining || 0) > 0
+                              ? "bg-white border-gray-200"
+                              : "bg-green-50 border-green-300"
+                          }`}
+                          style={
+                            (dept.inProcess.processingTimeRemaining || 0) > 0
+                              ? {
+                                  borderTopColor: orderColor.dot,
+                                  borderTopWidth: "4px",
+                                }
+                              : undefined
+                          }
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <OrderColorDot
+                                orderId={dept.inProcess.id}
+                                size="sm"
+                              />
+                              <span className="text-sm font-medium text-blue-900">
+                                Processing: {dept.inProcess.id}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-xs font-bold ${
+                                (dept.inProcess.processingTimeRemaining || 0) >
+                                0
+                                  ? "text-orange-600"
+                                  : "text-green-600"
+                              }`}
+                            >
+                              {(dept.inProcess.processingTimeRemaining || 0) > 0
+                                ? formatTime(
+                                    dept.inProcess.processingTimeRemaining
+                                  )
+                                : "READY ✅"}
+                            </span>
+                          </div>
+
+                          {/* Progress Bar */}
+                          {(() => {
+                            const timeRemaining =
+                              dept.inProcess.processingTimeRemaining || 0;
+                            const totalTime =
+                              dept.inProcess.processingTime || 1;
+                            const progress = Math.max(
+                              0,
+                              Math.min(
+                                100,
+                                ((totalTime - timeRemaining) / totalTime) * 100
+                              )
+                            );
+
+                            return (
+                              <div className="mb-2">
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full transition-all duration-1000 ${
+                                      progress >= 100
+                                        ? "bg-green-500"
+                                        : "bg-blue-500"
+                                    }`}
+                                    style={{ width: `${progress}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          <div className="text-xs">
+                            <span className="text-blue-700">Priority: </span>
+                            <span
+                              className={`font-medium ${getPriorityTextColor(
+                                dept.inProcess.priority
+                              )}`}
+                            >
+                              {getPriorityLabel(dept.inProcess.priority)}
+                            </span>
+                          </div>
+                          {(() => {
+                            const timeRemaining =
+                              dept.inProcess.processingTimeRemaining || 0;
+                            const isComplete = timeRemaining <= 0;
+
+                            return (
+                              <button
+                                onClick={() =>
+                                  handleCompleteProcessing(dept.id)
+                                }
+                                disabled={!isComplete}
+                                className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                  isComplete
+                                    ? "bg-green-600 text-white hover:bg-green-700 animate-pulse"
+                                    : "bg-gray-400 text-gray-600 cursor-not-allowed"
+                                }`}
+                              >
+                                {isComplete
+                                  ? "✅ Complete Processing"
+                                  : `⏳ Processing... (${formatTime(
+                                      timeRemaining
+                                    )})`}
+                              </button>
+                            );
+                          })()}
+                        </div>
+                      );
+                    })()}
 
                   {/* Queue Display */}
                   <div className="flex-1">
@@ -605,35 +855,47 @@ export default function GameScreen() {
                     </div>
                     {sortedQueue.length > 0 ? (
                       <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {sortedQueue.map((order, index) => (
-                          <div
-                            key={order.id}
-                            className="flex items-center justify-between p-2 bg-gray-50 rounded border text-xs"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <span className="w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                                {index + 1}
-                              </span>
-                              <span className="font-medium">{order.id}</span>
-                            </div>
-                            <div className="text-right">
-                              <div
-                                className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
-                                  order
-                                )}`}
-                              >
-                                {order.slaStatus === "on-track"
-                                  ? "OK"
-                                  : order.slaStatus === "at-risk"
-                                  ? "RISK"
-                                  : "LATE"}
+                        {sortedQueue.map((order, index) => {
+                          const orderColor = getOrderColor(order.id);
+                          return (
+                            <div
+                              key={order.id}
+                              className="flex items-center justify-between p-2 rounded border border-gray-200 bg-white text-xs transition-all"
+                              style={{
+                                borderTopColor: orderColor.dot,
+                                borderTopWidth: "3px",
+                              }}
+                            >
+                              <div className="flex items-center space-x-2">
+                                <span className="w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                  {index + 1}
+                                </span>
+                                <OrderColorDot orderId={order.id} size="xs" />
+                                <span className="font-medium">{order.id}</span>
                               </div>
-                              <div className="text-xs text-gray-600 mt-0.5">
-                                {order.priority.toUpperCase()}
+                              <div className="text-right">
+                                <div
+                                  className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
+                                    order
+                                  )}`}
+                                >
+                                  {order.slaStatus === "on-track"
+                                    ? "OK"
+                                    : order.slaStatus === "at-risk"
+                                    ? "RISK"
+                                    : "LATE"}
+                                </div>
+                                <div
+                                  className={`text-xs font-medium mt-0.5 ${getPriorityTextColor(
+                                    order.priority
+                                  )}`}
+                                >
+                                  {getPriorityLabel(order.priority)}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-gray-500 text-center py-4 text-xs">
@@ -748,12 +1010,14 @@ export default function GameScreen() {
 
             <div className="grid grid-cols-2 gap-6 text-sm">
               <div>
-                <label className="text-sm font-medium text-gray-600 block mb-1">
-                  Route
+                <label className="text-sm font-medium text-gray-600 block mb-3">
+                  Route Progress
                 </label>
-                <p className="text-lg font-mono bg-gray-100 px-3 py-2 rounded">
-                  {selectedOrder.route.join(" → ")}
-                </p>
+                <RouteProgressIndicator
+                  order={selectedOrder}
+                  size="lg"
+                  showLabels={true}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600 block mb-1">

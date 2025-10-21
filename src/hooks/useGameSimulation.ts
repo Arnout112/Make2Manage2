@@ -60,10 +60,10 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         generationChance = 0.002; // ~7 orders per hour
         break;
       case "medium":
-        generationChance = 0.003; // ~11 orders per hour
+        generationChance = 0.006; // ~22 orders per hour (increased for more FIFO decisions)
         break;
       case "high":
-        generationChance = 0.005; // ~18 orders per hour
+        generationChance = 0.009; // ~32 orders per hour (increased for challenging priority decisions)
         break;
     }
 
@@ -996,6 +996,172 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     [gameState, recordDecision]
   );
 
+  // Complete processing in manual mode
+  const completeProcessing = useCallback(
+    (departmentId: number) => {
+      const previousState = { ...gameState };
+
+      setGameState((prev) => {
+        const department = prev.departments.find((d) => d.id === departmentId);
+        if (!department || !department.inProcess) {
+          return prev;
+        }
+
+        const processingOrder = department.inProcess;
+        const currentRouteStepIndex =
+          processingOrder.route.indexOf(departmentId);
+
+        if (currentRouteStepIndex === -1) {
+          console.error(
+            `Department ${departmentId} not found in order ${processingOrder.id} route`
+          );
+          return prev;
+        }
+
+        // Check if this is the last step in the route
+        const isLastStep =
+          currentRouteStepIndex >= processingOrder.route.length - 1;
+
+        const updatedDepartments = prev.departments.map((dept) => {
+          if (dept.id === departmentId) {
+            return {
+              ...dept,
+              inProcess: undefined,
+              totalProcessed: dept.totalProcessed + 1,
+              utilization: dept.queue.length > 0 ? 75 : 0,
+            };
+          }
+          return dept;
+        });
+
+        let updatedPendingOrders = [...prev.pendingOrders];
+        let updatedCompletedOrders = [...prev.completedOrders];
+
+        const completedOrder = {
+          ...processingOrder,
+          timestamps: [
+            ...processingOrder.timestamps,
+            {
+              deptId: departmentId,
+              start: new Date(Date.now() - 30000),
+              end: new Date(),
+            },
+          ],
+        };
+
+        if (isLastStep) {
+          // Order is fully completed
+          completedOrder.status =
+            completedOrder.slaStatus === "overdue"
+              ? "completed-late"
+              : "completed-on-time";
+          completedOrder.completedAt = new Date();
+          completedOrder.actualLeadTime = Math.floor(
+            (Date.now() - completedOrder.createdAt.getTime()) / (60 * 1000)
+          );
+          updatedCompletedOrders.push(completedOrder);
+        } else {
+          // Move to next department - return to pending for manual assignment
+          const updatedOrder = {
+            ...completedOrder,
+            currentStepIndex: currentRouteStepIndex + 1,
+            status: "queued" as const,
+            currentDepartment: undefined, // Clear current department so it goes back to pending
+          };
+          updatedPendingOrders.push(updatedOrder);
+        }
+
+        return {
+          ...prev,
+          departments: updatedDepartments,
+          pendingOrders: updatedPendingOrders,
+          completedOrders: updatedCompletedOrders,
+        };
+      });
+
+      recordDecision(
+        "order-release",
+        `Manually completed processing of order in Department ${departmentId}`,
+        undefined,
+        previousState
+      );
+    },
+    [gameState, recordDecision]
+  );
+
+  // Start processing in manual mode
+  const startProcessing = useCallback(
+    (departmentId: number) => {
+      const previousState = { ...gameState };
+
+      setGameState((prev) => {
+        const department = prev.departments.find((d) => d.id === departmentId);
+        if (
+          !department ||
+          department.inProcess ||
+          department.queue.length === 0
+        ) {
+          return prev;
+        }
+
+        // Get the first order from the queue
+        const nextOrder = department.queue[0];
+        const remainingQueue = department.queue.slice(1);
+
+        // Calculate processing time for this order at this department
+        const processingTime = calculateProcessingTime(nextOrder, department);
+
+        const updatedDepartments = prev.departments.map((dept) => {
+          if (dept.id === departmentId) {
+            return {
+              ...dept,
+              queue: remainingQueue,
+              inProcess: {
+                ...nextOrder,
+                status: "processing" as const,
+                processingTime,
+                processingTimeRemaining: processingTime,
+                currentOperationIndex: 0,
+                operationProgress:
+                  dept.operations.length > 0
+                    ? [
+                        {
+                          operationId: dept.operations[0].id,
+                          operationName: dept.operations[0].name,
+                          startTime: new Date(),
+                          duration: dept.operations[0].duration,
+                          completed: false,
+                        },
+                      ]
+                    : [],
+                timestamps: [
+                  ...nextOrder.timestamps,
+                  { deptId: departmentId, start: new Date() },
+                ],
+              },
+              utilization: 100, // Department is now busy
+              status: "busy" as const,
+            };
+          }
+          return dept;
+        });
+
+        return {
+          ...prev,
+          departments: updatedDepartments,
+        };
+      });
+
+      recordDecision(
+        "order-release",
+        `Manually started processing order in Department ${departmentId}`,
+        undefined,
+        previousState
+      );
+    },
+    [gameState, recordDecision, calculateProcessingTime]
+  );
+
   return {
     gameState,
     isRunning,
@@ -1010,5 +1176,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     undoLastDecision,
     redoLastDecision,
     clearDecisionHistory,
+    completeProcessing,
+    startProcessing,
   };
 };
