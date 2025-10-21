@@ -220,6 +220,28 @@ export default function GameScreen() {
     }
   };
 
+  const handleStartProcessing = (departmentId: number) => {
+    const dept = gameState.departments.find((d) => d.id === departmentId);
+    if (!dept || dept.inProcess || dept.queue.length === 0) return;
+
+    // Get the first order from the queue (FIFO by default)
+    const nextOrder = dept.queue[0];
+    console.log(
+      `Manually starting processing of order ${nextOrder.id} in ${dept.name}`
+    );
+
+    // Move the order from queue to processing
+    scheduleOrder(nextOrder.id, departmentId, new Date());
+
+    // Show educational feedback
+    alert(
+      `🔄 Started processing Order ${nextOrder.id} in ${dept.name}\n\n` +
+        `Processing time: ${formatTime(nextOrder.processingTimeRemaining)}\n` +
+        `Priority: ${nextOrder.priority.toUpperCase()}\n\n` +
+        `Click "Complete Processing" when you're ready to finish this step.`
+    );
+  };
+
   const getSLAStatusColor = (order: Order) => {
     switch (order.slaStatus) {
       case "overdue":
@@ -313,11 +335,20 @@ export default function GameScreen() {
               </div>
             </div>
 
-            <div className="text-sm text-gray-600 mb-3">
-              <strong>Instructions:</strong> Each customer order needs to be{" "}
-              <strong>released to production</strong> before manufacturing can
-              begin. Click "Release to Production" to approve an order and send
-              it to the first department in its route.
+            <div className="text-sm text-gray-600 mb-3 space-y-1">
+              <div>
+                <strong>Instructions:</strong> Each customer order needs to be{" "}
+                <strong>released to production</strong> before manufacturing can
+                begin. Click "Release to Production" to approve an order and
+                send it to the first department in its route.
+              </div>
+              {gameState.session.settings.manualMode && (
+                <div className="text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
+                  <strong>Manual Mode:</strong> You can also{" "}
+                  <strong>drag orders</strong> directly to departments to assign
+                  them manually. Look for the green drop zones!
+                </div>
+              )}
             </div>
 
             {/* Compact Grid Layout - Multiple rows of cards */}
@@ -328,11 +359,11 @@ export default function GameScreen() {
                   draggable
                   onDragStart={() => handleDragStart(order)}
                   onDragEnd={handleDragEnd}
-                  className={`p-2 bg-gray-50 rounded-lg border transition-all duration-200 ${
+                  className={`p-2 bg-gray-50 rounded-lg border-2 transition-all duration-200 ${
                     draggedOrder?.id === order.id
-                      ? "opacity-50 scale-95"
-                      : "hover:bg-gray-100 cursor-grab active:cursor-grabbing"
-                  }`}
+                      ? "opacity-50 scale-95 rotate-2 shadow-lg border-blue-300"
+                      : "hover:bg-gray-100 hover:shadow-md hover:border-blue-200 cursor-grab active:cursor-grabbing hover:scale-105"
+                  } relative group`}
                 >
                   {/* Compact Header with ID, Priority, Due Date, and SLA Status */}
                   <div className="mb-1.5">
@@ -449,11 +480,13 @@ export default function GameScreen() {
                     e.preventDefault();
                     handleDropOnDepartment(dept.id);
                   }}
-                  className={`bg-white rounded-xl p-6 shadow-sm border-2 transition-all duration-300 min-h-[380px] ${
+                  className={`bg-white rounded-xl p-6 shadow-sm border-2 transition-all duration-300 min-h-[380px] relative ${
                     draggedOrder && draggedOrder.route.includes(dept.id)
-                      ? "border-green-400 bg-green-50"
+                      ? "border-green-500 bg-green-50 shadow-lg scale-105 ring-2 ring-green-200"
+                      : draggedOrder && !draggedOrder.route.includes(dept.id)
+                      ? "border-red-300 bg-red-50 opacity-60"
                       : draggedOrder
-                      ? "border-gray-300 bg-gray-100"
+                      ? "border-gray-300 bg-gray-100 opacity-80"
                       : "border-gray-200"
                   } ${
                     capacityPercentage > 90 ? "border-red-300 bg-red-50" : ""
@@ -607,7 +640,40 @@ export default function GameScreen() {
                         No orders to process
                       </div>
                     )}
+
+                    {/* Manual Mode: Start Processing Button */}
+                    {gameState.session.settings.manualMode &&
+                      !dept.inProcess &&
+                      sortedQueue.length > 0 && (
+                        <button
+                          onClick={() => handleStartProcessing(dept.id)}
+                          className="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-green-700 transition-colors"
+                        >
+                          Start Processing Order {sortedQueue[0].id}
+                        </button>
+                      )}
                   </div>
+
+                  {/* Enhanced Drag-and-Drop Overlay */}
+                  {draggedOrder && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                      {draggedOrder.route.includes(dept.id) ? (
+                        <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg text-center animate-pulse">
+                          <div className="font-bold text-lg">✓ Drop Here</div>
+                          <div className="text-sm">
+                            Valid department for {draggedOrder.id}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg text-center">
+                          <div className="font-bold text-lg">✗ Invalid</div>
+                          <div className="text-sm">
+                            {draggedOrder.id} cannot go here
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

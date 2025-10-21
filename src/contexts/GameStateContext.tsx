@@ -1,7 +1,7 @@
-import { createContext, useContext } from 'react';
-import { useGameSimulation } from '../hooks/useGameSimulation';
-import type { GameSettings, GameState } from '../types';
-import type { ReactNode } from 'react';
+import { createContext, useContext } from "react";
+import { useGameSimulation } from "../hooks/useGameSimulation";
+import type { GameSettings, GameState } from "../types";
+import type { ReactNode } from "react";
 
 interface GameStateContextType {
   gameState: GameState;
@@ -11,8 +11,16 @@ interface GameStateContextType {
   pauseGame: () => void;
   resetGame: () => void;
   releaseOrder: (orderId: string) => void;
-  scheduleOrder: (orderId: string, departmentId: number, scheduledTime: Date) => void;
-  rebalanceWorkload: (sourceIds: number[], targetIds: number[], ordersToMove: string[]) => void;
+  scheduleOrder: (
+    orderId: string,
+    departmentId: number,
+    scheduledTime: Date
+  ) => void;
+  rebalanceWorkload: (
+    sourceIds: number[],
+    targetIds: number[],
+    ordersToMove: string[]
+  ) => void;
   undoLastDecision: () => void;
   redoLastDecision: () => void;
   clearDecisionHistory: () => void;
@@ -26,7 +34,10 @@ interface GameStateProviderProps {
   gameSettings: GameSettings;
 }
 
-export function GameStateProvider({ children, gameSettings }: GameStateProviderProps) {
+export function GameStateProvider({
+  children,
+  gameSettings,
+}: GameStateProviderProps) {
   try {
     const gameSimulation = useGameSimulation(gameSettings);
 
@@ -52,14 +63,16 @@ export function GameStateProvider({ children, gameSettings }: GameStateProviderP
       </GameStateContext.Provider>
     );
   } catch (error) {
-    console.error('Error in GameStateProvider:', error);
+    console.error("Error in GameStateProvider:", error);
     return (
       <div className="flex-1 p-8 bg-red-50">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <strong>GameStateProvider Error:</strong> {error?.toString()}
           <details className="mt-2">
             <summary>Game Settings</summary>
-            <pre className="text-xs mt-1">{JSON.stringify(gameSettings, null, 2)}</pre>
+            <pre className="text-xs mt-1">
+              {JSON.stringify(gameSettings, null, 2)}
+            </pre>
           </details>
         </div>
       </div>
@@ -70,7 +83,9 @@ export function GameStateProvider({ children, gameSettings }: GameStateProviderP
 export const useSharedGameState = (): GameStateContextType => {
   const context = useContext(GameStateContext);
   if (!context) {
-    throw new Error('useSharedGameState must be used within a GameStateProvider');
+    throw new Error(
+      "useSharedGameState must be used within a GameStateProvider"
+    );
   }
   return context;
 };

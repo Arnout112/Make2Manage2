@@ -2,7 +2,10 @@ import { Factory, BarChart3, Users, Target, Book, Play } from "lucide-react";
 import type { ScreenType } from "../types";
 
 interface LandingScreenProps {
-  onNavigate: (screen: ScreenType) => void;
+  onNavigate: (
+    screen: ScreenType,
+    difficulty?: "easy" | "medium" | "hard"
+  ) => void;
 }
 
 export default function LandingScreen({ onNavigate }: LandingScreenProps) {
@@ -187,16 +190,62 @@ export default function LandingScreen({ onNavigate }: LandingScreenProps) {
             Ready to Start Learning?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Begin your journey into manufacturing planning and control
+            Choose your difficulty level and begin your journey
           </p>
 
-          <button
-            onClick={() => onNavigate("game")}
-            className="flex items-center space-x-3 bg-white text-blue-600 px-12 py-4 rounded-xl hover:bg-gray-100 transition-colors text-xl font-semibold mx-auto shadow-lg"
-          >
-            <Play size={28} />
-            <span>Launch Game</span>
-          </button>
+          {/* Difficulty Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+            {/* Easy Mode */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <h3 className="text-xl font-bold text-white mb-3">🟢 Easy</h3>
+              <ul className="text-blue-100 text-sm mb-6 space-y-1">
+                <li>• Slow order generation</li>
+                <li>• Simple routes</li>
+                <li>• 15 minute sessions</li>
+                <li>• No random events</li>
+              </ul>
+              <button
+                onClick={() => onNavigate("game", "easy")}
+                className="w-full bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors font-semibold"
+              >
+                Start Easy
+              </button>
+            </div>
+
+            {/* Medium Mode */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <h3 className="text-xl font-bold text-white mb-3">🟡 Medium</h3>
+              <ul className="text-blue-100 text-sm mb-6 space-y-1">
+                <li>• Moderate order flow</li>
+                <li>• Intermediate complexity</li>
+                <li>• 30 minute sessions</li>
+                <li>• Random events enabled</li>
+              </ul>
+              <button
+                onClick={() => onNavigate("game", "medium")}
+                className="w-full bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors font-semibold"
+              >
+                Start Medium
+              </button>
+            </div>
+
+            {/* Hard Mode */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <h3 className="text-xl font-bold text-white mb-3">🔴 Hard</h3>
+              <ul className="text-blue-100 text-sm mb-6 space-y-1">
+                <li>• Fast order generation</li>
+                <li>• Complex routing</li>
+                <li>• 60 minute sessions</li>
+                <li>• 2x game speed</li>
+              </ul>
+              <button
+                onClick={() => onNavigate("game", "hard")}
+                className="w-full bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors font-semibold"
+              >
+                Start Hard
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

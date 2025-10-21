@@ -31,7 +31,11 @@ export interface Order {
   rushOrder?: boolean; // R03: Rush order flag
   scheduledStartTime?: Date; // R04-R05: Scheduled start time for capacity planning
   isHalfOrder?: boolean; // Half orders require only 50% of normal processing time
-  halfOrderReason?: "defect_repair" | "partial_work" | "rework" | "quality_issue"; // Reason for half order
+  halfOrderReason?:
+    | "defect_repair"
+    | "partial_work"
+    | "rework"
+    | "quality_issue"; // Reason for half order
   processingTimeMultiplier?: number; // Multiplier for processing time (0.5 for half orders, 1.0 for normal)
 }
 
@@ -118,12 +122,20 @@ export interface GameSettings {
   gameSpeed: 1 | 2 | 4 | 8; // Speed multiplier - R05: speed control
   enableEvents: boolean; // R07: equipment failure, delivery delays
   enableAdvancedRouting: boolean; // R06: advanced routing logic
+  manualMode: boolean; // Educational mode: disable automatic processing, require student decisions
+  difficultyPreset?: "easy" | "medium" | "hard"; // Simple difficulty presets
+}
+
+export interface ScheduledOrder {
+  order: Order;
+  releaseTime: number; // Time in milliseconds from game start when order should appear
 }
 
 export interface GameState {
   session: GameSession;
   departments: Department[];
   pendingOrders: Order[];
+  scheduledOrders: ScheduledOrder[]; // Orders waiting to be released at specific times
   completedOrders: Order[];
   rejectedOrders: Order[];
   totalOrdersGenerated: number;
@@ -157,7 +169,8 @@ export interface GameEvent {
     | "order-released"
     | "game-started"
     | "game-paused"
-    | "decision-made";
+    | "decision-made"
+    | "processing-ready"; // Manual mode: indicates processing is complete and ready for student action
   timestamp: Date;
   message: string;
   severity: "info" | "warning" | "error" | "success";

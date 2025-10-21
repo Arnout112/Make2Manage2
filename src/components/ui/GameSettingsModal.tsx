@@ -174,6 +174,31 @@ export default function GameSettingsModal({
             </p>
           </div>
 
+          {/* Manual Mode for Educational Control */}
+          <div>
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={settings.manualMode}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    manualMode: e.target.checked,
+                  })
+                }
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                <Target className="w-4 h-4 inline mr-2" />
+                Enable Manual Mode (Educational)
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 ml-7">
+              Students control all processing decisions: drag orders, start/stop
+              processing, make priority choices
+            </p>
+          </div>
+
           {/* R06: Enable Advanced Routing */}
           <div>
             <label className="flex items-center space-x-3">

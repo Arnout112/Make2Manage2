@@ -9,13 +9,20 @@ import {
   useSharedGameState,
 } from "../contexts/GameStateContext";
 import { getPriorityRuleDescription } from "../utils/priorityRules";
+import { applyDifficultyPreset } from "../utils/gameInitialization";
 import LandingScreen from "./LandingScreen";
 import AnalyticsScreen from "./AnalyticsScreen";
 import GameScreen from "./GameScreen";
 import type { ScreenType, NavigationScreen, GameSettings } from "../types";
 
 // Component to provide game controls using shared state
-function GameControlsHeaderWrapper() {
+function GameControlsHeaderWrapper({
+  difficulty,
+  onDifficultyChange,
+}: {
+  difficulty: "easy" | "medium" | "hard";
+  onDifficultyChange: (difficulty: "easy" | "medium" | "hard") => void;
+}) {
   const { gameState, startGame, pauseGame, resetGame } = useSharedGameState();
 
   return (
@@ -25,6 +32,8 @@ function GameControlsHeaderWrapper() {
       onStart={startGame}
       onPause={pauseGame}
       onReset={resetGame}
+      difficulty={difficulty}
+      onDifficultyChange={onDifficultyChange}
     />
   );
 }
@@ -32,24 +41,46 @@ function GameControlsHeaderWrapper() {
 export default function DashboardScreen() {
   const [activeScreen, setActiveScreen] = useState<ScreenType>("landing");
   const [showHelpSidebar, setShowHelpSidebar] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<
+    "easy" | "medium" | "hard"
+  >("easy");
+
+  // Use selected difficulty instead of random
+  const presetSettings = applyDifficultyPreset(selectedDifficulty);
 
   // Shared game settings for all screens that need game state
   const sharedGameSettings: GameSettings = {
-    sessionDuration: 15, // Shorter sessions for manual learning
-    gameSpeed: 1, // Normal speed for learning
-    orderGenerationRate: "low", // Slower pace for manual processing
-    complexityLevel: "beginner", // Start with beginner level
-    enableEvents: true, // Keep events for learning scenarios
-    enableAdvancedRouting: false, // Simplify for manual mode
+    sessionDuration: 15, // Default, can be overridden by preset
+    gameSpeed: 1, // Default, can be overridden by preset
+    orderGenerationRate: "low", // Default, can be overridden by preset
+    complexityLevel: "beginner", // Default, can be overridden by preset
+    enableEvents: true, // Default, can be overridden by preset
+    enableAdvancedRouting: false, // Default, can be overridden by preset
+    manualMode: true, // Always manual mode for educational experience
     randomSeed: "shared-game-seed-123",
+    difficultyPreset: selectedDifficulty,
+    ...presetSettings, // Apply preset overrides
   };
 
   const handleNavigationChange = (screen: NavigationScreen) => {
     setActiveScreen(screen);
   };
 
-  const handleLandingNavigate = (screen: ScreenType) => {
+  const handleLandingNavigate = (
+    screen: ScreenType,
+    difficulty?: "easy" | "medium" | "hard"
+  ) => {
+    if (difficulty) {
+      setSelectedDifficulty(difficulty);
+    }
     setActiveScreen(screen);
+  };
+
+  const handleDifficultyChange = (
+    newDifficulty: "easy" | "medium" | "hard"
+  ) => {
+    setSelectedDifficulty(newDifficulty);
+    // The GameStateProvider will automatically reinitialize with new settings
   };
 
   const getScreenInfo = () => {
@@ -63,12 +94,12 @@ export default function DashboardScreen() {
       case "game":
         return {
           title: "Make-to-Order Learning Game",
-          subtitle: "Interactive Manufacturing Simulation",
+          subtitle: `${selectedDifficulty.toUpperCase()} Mode - Interactive Manufacturing Simulation`,
         };
       case "manual-game":
         return {
           title: "Manual Processing Game",
-          subtitle: "Step-by-Step Order Processing Practice",
+          subtitle: `${selectedDifficulty.toUpperCase()} Mode - Step-by-Step Order Processing Practice`,
         };
       case "analytics":
         return {
@@ -131,7 +162,10 @@ export default function DashboardScreen() {
                       <Lightbulb className="w-5 h-5" />
                       <span className="text-sm font-medium">Tips & Rules</span>
                     </button>
-                    <GameControlsHeaderWrapper />
+                    <GameControlsHeaderWrapper
+                      difficulty={selectedDifficulty}
+                      onDifficultyChange={handleDifficultyChange}
+                    />
                   </div>
                 ) : undefined
               }
