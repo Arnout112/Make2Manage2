@@ -132,8 +132,7 @@ export default function DashboardScreen() {
       id="main-content"
     >
       {/* Accessibility Controls - Available globally */}
-      <AccessibilityControls />
-
+      <AccessibilityControls />{" "}
       {/* Render landing screen directly or wrap other screens with GameStateProvider */}
       {activeScreen === "landing" ? (
         renderActiveScreen()
@@ -176,7 +175,6 @@ export default function DashboardScreen() {
           </div>
         </GameStateProvider>
       )}
-
       {/* Help Sidebar - Only show on game screen */}
       {activeScreen === "game" && showHelpSidebar && (
         <div className="fixed inset-y-0 right-0 z-50 w-96 bg-white shadow-2xl border-l border-gray-200 transform transition-transform">
@@ -277,7 +275,6 @@ export default function DashboardScreen() {
           </div>
         </div>
       )}
-
       {/* Sidebar Overlay */}
       {activeScreen === "game" && showHelpSidebar && (
         <div
