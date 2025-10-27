@@ -3,7 +3,7 @@ import {
   Package,
   Factory,
   ShoppingCart,
-  Play,
+  
   XCircle,
   CheckCircle,
 } from "lucide-react";
@@ -36,12 +36,15 @@ export default function GameScreen() {
   );
   const [departmentPriorityRules, setDepartmentPriorityRules] = useState<{
     [key: number]: PriorityRule;
-  }>({
-    1: "FIFO", // Welding
-    2: "FIFO", // Machining
-    3: "FIFO", // Painting
-    4: "FIFO", // Assembly
-  });
+  }>(
+    {
+      1: "FIFO", // Welding
+      2: "FIFO", // Machining
+      3: "FIFO", // Painting
+      4: "FIFO", // Assembly
+      5: "FIFO", // Engineering (rendered under Order Management)
+    }
+  );
   const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
 
   // Note: Game settings are now managed centrally in GameStateProvider
@@ -49,7 +52,6 @@ export default function GameScreen() {
   // Use the shared game state with error handling
   let gameState,
     currentDecisionIndex,
-    releaseOrder,
     scheduleOrder,
     rebalanceWorkload,
     undoLastDecision,
@@ -57,12 +59,12 @@ export default function GameScreen() {
     clearDecisionHistory,
     completeProcessing,
     startProcessing;
+  let holdProcessing, resumeProcessing;
 
   try {
     const sharedState = useSharedGameState();
     gameState = sharedState.gameState;
     currentDecisionIndex = sharedState.currentDecisionIndex;
-    releaseOrder = sharedState.releaseOrder;
     scheduleOrder = sharedState.scheduleOrder;
     rebalanceWorkload = sharedState.rebalanceWorkload;
     undoLastDecision = sharedState.undoLastDecision;
@@ -70,6 +72,12 @@ export default function GameScreen() {
     clearDecisionHistory = sharedState.clearDecisionHistory;
     completeProcessing = sharedState.completeProcessing;
     startProcessing = sharedState.startProcessing;
+  // New: hold/resume actions for manual intervention
+  // Hold: pause current processing so a higher-priority order can be processed
+  // Resume: move a held order back to the front of the queue (teacher/student resumes it)
+  // (Both functions come from the simulation hook)
+  holdProcessing = sharedState.holdProcessing;
+  resumeProcessing = sharedState.resumeProcessing;
   } catch (error) {
     return (
       <div className="flex-1 p-8 bg-red-50">
@@ -95,9 +103,18 @@ export default function GameScreen() {
     setDetailDrawerOpen(true);
   };
 
-  const handleReleaseOrder = (orderId: string) => {
-    releaseOrder(orderId);
+  const handleHoldProcessing = (departmentId: number) => {
+    const dept = gameState.departments.find((d) => d.id === departmentId);
+    if (!dept || !dept.inProcess) return;
+    // Pause current in-process order
+    holdProcessing(departmentId);
   };
+
+  const handleResumeOrder = (orderId: string) => {
+    resumeProcessing(orderId);
+  };
+
+  // Batch/manual release handlers removed — students must drag orders to departments
 
   const handleAssignOrderToDepartment = (
     order: Order,
@@ -345,64 +362,30 @@ export default function GameScreen() {
             {/* Tab Content */}
             {activeOrderTab === "pending" && (
               <>
-                {/* Quick Actions */}
+                {/* Quick Actions removed — manual drag-only release enforced */}
                 <div className="flex items-center justify-between mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-blue-900">
-                      Quick Actions
-                    </p>
+                    <p className="text-sm font-medium text-blue-900">Order Release</p>
                     <p className="text-xs text-blue-700">
-                      Approve and release customer orders for production
+                      Scheduled and pending orders must be started by dragging
+                      them onto a department. Automatic or batch release has been
+                      disabled to encourage student decision-making.
                     </p>
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => {
-                        // Release all orders that can fit in factory capacity
-                        const availableCapacity = gameState.departments.reduce(
-                          (total, dept) =>
-                            total + (dept.maxQueueSize - dept.wipCount),
-                          0
-                        );
-                        const ordersToRelease = Math.min(
-                          gameState.pendingOrders.length,
-                          availableCapacity,
-                          3
-                        );
-                        for (let i = 0; i < ordersToRelease; i++) {
-                          if (gameState.pendingOrders[i]) {
-                            handleReleaseOrder(gameState.pendingOrders[i].id);
-                          }
-                        }
-                      }}
-                      disabled={
-                        gameState.pendingOrders.length === 0 ||
-                        gameState.session.status !== "running" ||
-                        gameState.departments.every(
-                          (dept) => dept.wipCount >= dept.maxQueueSize
-                        )
-                      }
-                      className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors font-medium text-sm"
-                    >
-                      <Package size={16} />
-                      <span>Batch Release (Up to 3)</span>
-                    </button>
                   </div>
                 </div>
+                
 
                 <div className="text-sm text-gray-600 mb-3 space-y-1">
                   <div>
-                    <strong>Instructions:</strong> Each customer order needs to
-                    be <strong>released to production</strong> before
-                    manufacturing can begin. Click "Release to Production" to
-                    approve an order and send it to the first department in its
-                    route.
+                    <strong>Instructions:</strong> Drag orders from the
+                    Pending list to the department where you want processing to
+                    start. Automatic release has been disabled.
                   </div>
                   {gameState.session.settings.manualMode && (
                     <div className="text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
-                      <strong>Manual Mode:</strong> You can also{" "}
-                      <strong>drag orders</strong> directly to departments to
-                      assign them manually. Look for the green drop zones!
+                      <strong>Manual Mode:</strong> Drag orders to departments
+                      to assign them. Use the Start/Complete buttons inside the
+                      department panels to progress work.
                     </div>
                   )}
                 </div>
@@ -470,7 +453,11 @@ export default function GameScreen() {
                               )}
                             </div>
                             <span className="text-gray-600">
-                              {order.dueDate.toLocaleDateString()}
+                              {order.dueGameMinutes !== undefined
+                                ? `${order.dueGameMinutes} min (game)`
+                                : order.dueDate
+                                ? order.dueDate.toLocaleDateString()
+                                : "—"}
                             </span>
                           </div>
                         </div>
@@ -482,17 +469,9 @@ export default function GameScreen() {
 
                         {/* Action Buttons */}
                         <div className="space-y-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReleaseOrder(order.id);
-                            }}
-                            disabled={gameState.session.status !== "running"}
-                            className="w-full flex items-center justify-center space-x-1 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-                          >
-                            <Play size={10} />
-                            <span>Release</span>
-                          </button>
+                          <div className="w-full text-xs text-gray-600 p-2 rounded bg-gray-50 text-center">
+                            Drag this order to a department to start processing
+                          </div>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -613,6 +592,120 @@ export default function GameScreen() {
               </>
             )}
           </div>
+
+          {/* Engineering panel (under Order Management) */}
+          {(() => {
+            const eng = gameState.departments.find((d) => d.id === 5);
+            if (!eng) return null;
+            const sortedQueue = sortOrdersByPriorityRule(
+              eng.queue,
+              departmentPriorityRules[eng.id]
+            );
+            const capacityPercentage = (eng.wipCount / eng.maxQueueSize) * 100;
+
+            return (
+              <div className="mt-4">
+                <div
+                  className={`bg-white rounded-xl p-4 shadow-sm border-2 transition-all duration-300 min-h-[160px] relative ${
+                    draggedOrder && draggedOrder.route.includes(eng.id)
+                      ? "border-green-500 bg-green-50 shadow-lg scale-105 ring-2 ring-green-200"
+                      : draggedOrder && !draggedOrder.route.includes(eng.id)
+                      ? "border-red-300 bg-red-50 opacity-60"
+                      : "border-gray-200"
+                  } ${capacityPercentage > 90 ? "border-red-300 bg-red-50" : ""}`}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDropOnDepartment(eng.id);
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-800">Engineering</h4>
+                      <div className="text-xs text-gray-600">Engineering review & approvals</div>
+                    </div>
+                    <div className="text-sm text-gray-600">WIP {eng.wipCount}/{eng.maxQueueSize}</div>
+                  </div>
+
+                  <div className="text-sm font-medium text-gray-700 mb-2">Queue ({sortedQueue.length})</div>
+                  {sortedQueue.length > 0 ? (
+                    <div className="space-y-2 max-h-28 overflow-y-auto">
+                      {sortedQueue.map((order, idx) => (
+                        <div key={order.id} className="flex items-center justify-between p-2 rounded border border-gray-200 bg-white text-xs">
+                          <div className="flex items-center space-x-2">
+                            <span className="w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">{idx + 1}</span>
+                            <OrderColorDot orderId={order.id} size="xs" />
+                            <span className="font-medium">{order.id}</span>
+                          </div>
+                          <div className="text-xs text-gray-600">{order.priority.toUpperCase()}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 text-center py-4 text-xs">No engineering tasks</div>
+                  )}
+
+                  {gameState.session.settings.manualMode && !eng.inProcess && sortedQueue.length > 0 && (
+                    <button
+                      onClick={() => handleStartProcessing(eng.id)}
+                      className="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-green-700 transition-colors"
+                    >
+                      Start Processing {sortedQueue[0].id}
+                    </button>
+                  )}
+
+                  {eng.inProcess && (
+                    <div className="mt-2 p-2 border rounded-lg bg-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <OrderColorDot orderId={eng.inProcess.id} size="sm" />
+                          <span className="text-sm font-medium text-blue-900">Processing: {eng.inProcess.id}</span>
+                        </div>
+                        <span className={`text-xs font-bold ${(eng.inProcess.processingTimeRemaining || 0) > 0 ? "text-orange-600" : "text-green-600"}`}>
+                          {(eng.inProcess.processingTimeRemaining || 0) > 0 ? formatTime(eng.inProcess.processingTimeRemaining) : "READY ✅"}
+                        </span>
+                      </div>
+
+                      {/* Small progress bar */}
+                      {(() => {
+                        const timeRemaining = eng.inProcess.processingTimeRemaining || 0;
+                        const totalTime = eng.inProcess.processingTime || 1;
+                        const progress = Math.max(0, Math.min(100, ((totalTime - timeRemaining) / totalTime) * 100));
+                        return (
+                          <div className="mb-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className={`h-2 rounded-full transition-all duration-1000 ${progress >= 100 ? "bg-green-500" : "bg-blue-500"}`} style={{ width: `${progress}%` }}></div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      <div className="text-xs mb-2">
+                        <span className="text-blue-700">Priority: </span>
+                        <span className={`font-medium ${getPriorityTextColor(eng.inProcess.priority)}`}>
+                          {getPriorityLabel(eng.inProcess.priority)}
+                        </span>
+                      </div>
+
+                      {(() => {
+                        const timeRemaining = eng.inProcess.processingTimeRemaining || 0;
+                        const isComplete = timeRemaining <= 0;
+                        return (
+                          <button
+                            onClick={() => handleCompleteProcessing(eng.id)}
+                            disabled={!isComplete}
+                            className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${isComplete ? "bg-green-600 text-white hover:bg-green-700 animate-pulse" : "bg-gray-400 text-gray-600 cursor-not-allowed"}`}
+                          >
+                            {isComplete ? "✅ Complete Processing" : `⏳ Processing... (${formatTime(timeRemaining)})`}
+                          </button>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right Side - Manufacturing Departments */}
@@ -621,7 +714,7 @@ export default function GameScreen() {
             Manufacturing Departments
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {gameState.departments.map((dept) => {
+            {gameState.departments.filter((d) => d.id !== 5).map((dept) => {
               const priorityRule = departmentPriorityRules[dept.id];
               const sortedQueue = sortOrdersByPriorityRule(
                 dept.queue,
@@ -825,23 +918,30 @@ export default function GameScreen() {
                             const isComplete = timeRemaining <= 0;
 
                             return (
-                              <button
-                                onClick={() =>
-                                  handleCompleteProcessing(dept.id)
-                                }
-                                disabled={!isComplete}
-                                className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                  isComplete
-                                    ? "bg-green-600 text-white hover:bg-green-700 animate-pulse"
-                                    : "bg-gray-400 text-gray-600 cursor-not-allowed"
-                                }`}
-                              >
-                                {isComplete
-                                  ? "✅ Complete Processing"
-                                  : `⏳ Processing... (${formatTime(
-                                      timeRemaining
-                                    )})`}
-                              </button>
+                              <div className="space-y-2">
+                                {/* Hold button allows pausing current work so another order can run */}
+                                {!isComplete && (
+                                  <button
+                                    onClick={() => handleHoldProcessing(dept.id)}
+                                    className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-800 hover:bg-gray-300`}
+                                  >
+                                    ⏸ Hold (pause)
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleCompleteProcessing(dept.id)}
+                                  disabled={!isComplete}
+                                  className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                    isComplete
+                                      ? "bg-green-600 text-white hover:bg-green-700 animate-pulse"
+                                      : "bg-gray-400 text-gray-600 cursor-not-allowed"
+                                  }`}
+                                >
+                                  {isComplete
+                                    ? "✅ Complete Processing"
+                                    : `⏳ Processing... (${formatTime(timeRemaining)})`}
+                                </button>
+                              </div>
                             );
                           })()}
                         </div>
@@ -892,6 +992,17 @@ export default function GameScreen() {
                                 >
                                   {getPriorityLabel(order.priority)}
                                 </div>
+                                {/* Resume button for held orders */}
+                                {order.status === "on-hold" && (
+                                  <div className="mt-2">
+                                    <button
+                                      onClick={() => handleResumeOrder(order.id)}
+                                      className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded"
+                                    >
+                                      Resume
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           );
@@ -1021,10 +1132,14 @@ export default function GameScreen() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600 block mb-1">
-                  Due Date
+                  Due
                 </label>
                 <p className="text-lg">
-                  {selectedOrder.dueDate.toLocaleString()}
+                  {selectedOrder.dueGameMinutes !== undefined
+                    ? `${selectedOrder.dueGameMinutes} min (game)`
+                    : selectedOrder.dueDate
+                    ? selectedOrder.dueDate.toLocaleString()
+                    : "—"}
                 </p>
               </div>
               <div>

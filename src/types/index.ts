@@ -6,7 +6,9 @@ export interface Order {
   customerName: string; // R01: Customer name for display
   priority: "low" | "normal" | "high" | "urgent"; // R02: Priority levels
   orderValue: number; // R02: Order value in currency
-  dueDate: Date;
+  dueDate?: Date;
+  // New: in-game due time measured in minutes from game start
+  dueGameMinutes?: number;
   route: number[];
   currentStepIndex: number;
   status:
@@ -15,7 +17,11 @@ export interface Order {
     | "done"
     | "error"
     | "completed-on-time"
-    | "completed-late";
+    | "completed-late"
+    | "on-hold"; // allow paused/on-hold status for manual interventions
+  // allow paused/on-hold status for manual interventions
+  // (some other order schemas also use "on-hold")
+  // Note: older richer Order types also declare "on-hold".
   timestamps: { deptId: number; start: Date; end?: Date }[];
   reworkCount: number;
   createdAt: Date;
@@ -195,7 +201,13 @@ export interface SessionLog {
 export interface Decision {
   id: string;
   timestamp: Date;
-  type: "order-release" | "game-pause" | "game-resume" | "settings-change";
+  type:
+    | "order-release"
+    | "game-pause"
+    | "game-resume"
+    | "settings-change"
+    | "order-hold"
+    | "order-resume";
   description: string;
   previousState?: Partial<GameState>;
   newState?: Partial<GameState>;

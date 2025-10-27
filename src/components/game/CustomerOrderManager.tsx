@@ -11,7 +11,6 @@ import type { Order, OrderStatus, OrderPriority } from "../../types/orders";
 interface CustomerOrderManagerProps {
   orders: Order[];
   customers: any[];
-  onReleaseOrder: (orderId: string) => void;
   onModifyOrder?: (orderId: string, modifications: Partial<Order>) => void;
   className?: string;
   showEducationalFeatures?: boolean;
@@ -20,7 +19,6 @@ interface CustomerOrderManagerProps {
 export default function CustomerOrderManager({
   orders = [],
   customers = [],
-  onReleaseOrder,
   className = "",
   showEducationalFeatures = true,
 }: CustomerOrderManagerProps) {
@@ -415,7 +413,11 @@ export default function CustomerOrderManager({
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div>
                         <div className="text-gray-900">
-                          {new Date(order.dueDate).toLocaleDateString()}
+                          {order.dueGameMinutes !== undefined
+                            ? `${order.dueGameMinutes} min (game)`
+                            : order.dueDate
+                            ? new Date(order.dueDate).toLocaleDateString()
+                            : "—"}
                         </div>
                         <div
                           className={`text-sm ${
@@ -467,14 +469,7 @@ export default function CustomerOrderManager({
                             </button>
                           </>
                         )}
-                        {order.status === "approved" && onReleaseOrder && (
-                          <button
-                            onClick={() => onReleaseOrder(order.id)}
-                            className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
-                          >
-                            Release
-                          </button>
-                        )}
+                        {/* Release button removed - manual drag required to start production */}
                         <button
                           onClick={() => console.log("Order details:", order)}
                           className="text-blue-600 hover:text-blue-900 text-xs"

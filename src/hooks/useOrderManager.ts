@@ -228,32 +228,6 @@ export function useOrderManager({
     [orders, onDecisionMade, onOrderUpdate]
   );
 
-  const releaseOrder = useCallback(
-    (orderId: string) => {
-      const order = orders.find((o) => o.id === orderId);
-      if (!order) return;
-
-      // Educational validation
-      if (!order.route || order.route.length === 0) {
-        onDecisionMade?.("order_release_failed", {
-          orderId,
-          reason: "No production route defined",
-        });
-        return false;
-      }
-
-      onDecisionMade?.("order_released", { orderId });
-
-      onOrderUpdate?.(orderId, {
-        status: "in-production",
-        startedAt: new Date().toISOString(),
-      });
-
-      return true;
-    },
-    [orders, onDecisionMade, onOrderUpdate]
-  );
-
   // Selection management
   const toggleOrderSelection = useCallback((orderId: string) => {
     setSelectedOrders((prev) =>
@@ -348,7 +322,7 @@ export function useOrderManager({
     rejectOrder,
     changePriority,
     toggleRushOrder,
-    releaseOrder,
+
 
     // Selection actions
     toggleOrderSelection,

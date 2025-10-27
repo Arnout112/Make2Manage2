@@ -135,6 +135,12 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         orderValue * (isHalfOrder ? 0.6 : 1.0)
       );
 
+      // Determine in-game due time (minutes) relative to session start
+      const extraDue = Math.max(1, Math.floor(rng.between(15, 45)));
+      const capMinutes = gameState.session.settings.sessionDuration || 30;
+      const currentElapsedMinutes = Math.floor(gameState.session.elapsedTime / 60000);
+      const dueGameMinutes = Math.min(capMinutes, currentElapsedMinutes + extraDue);
+
       newOrders.push({
         id: orderId,
         customerId: randomCustomer.id,
@@ -151,7 +157,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         isHalfOrder,
         halfOrderReason,
         processingTimeMultiplier,
-        dueDate: new Date(Date.now() + rng.between(15, 45) * 60 * 1000), // 15-45 minutes (shorter due to faster processing)
+        dueGameMinutes,
         route,
         currentStepIndex: -1,
         status: "queued",
@@ -166,24 +172,39 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   }, [gameState.totalOrdersGenerated, gameState.session.settings]);
 
   // Update SLA status for orders
-  const updateSLAStatus = useCallback((order: Order): Order => {
-    const now = Date.now();
-    const timeLeft = order.dueDate.getTime() - now;
-    const totalTime = order.dueDate.getTime() - order.createdAt.getTime();
-    const elapsed = now - order.createdAt.getTime();
-    const progress = elapsed / totalTime;
+  const updateSLAStatus = useCallback(
+    (order: Order): Order => {
+      const now = Date.now();
+      // Compute absolute due time: prefer dueGameMinutes (relative to session start) else fallback to legacy dueDate
+      const sessionStart = gameState.sessionLog?.startTime
+        ? gameState.sessionLog.startTime.getTime()
+        : Date.now();
 
-    let slaStatus: "on-track" | "at-risk" | "overdue";
-    if (timeLeft < 0) {
-      slaStatus = "overdue";
-    } else if (progress > 0.8) {
-      slaStatus = "at-risk";
-    } else {
-      slaStatus = "on-track";
-    }
+      const dueAbsoluteMs =
+        order.dueGameMinutes !== undefined
+          ? sessionStart + order.dueGameMinutes * 60 * 1000
+          : order.dueDate
+          ? order.dueDate.getTime()
+          : order.createdAt.getTime() + 30 * 60 * 1000; // fallback 30 minutes
 
-    return { ...order, slaStatus };
-  }, []);
+      const timeLeft = dueAbsoluteMs - now;
+      const totalTime = dueAbsoluteMs - order.createdAt.getTime();
+      const elapsed = now - order.createdAt.getTime();
+      const progress = totalTime > 0 ? elapsed / totalTime : 1;
+
+      let slaStatus: "on-track" | "at-risk" | "overdue";
+      if (timeLeft < 0) {
+        slaStatus = "overdue";
+      } else if (progress > 0.8) {
+        slaStatus = "at-risk";
+      } else {
+        slaStatus = "on-track";
+      }
+
+      return { ...order, slaStatus };
+    },
+    [gameState.sessionLog]
+  );
 
   // R07: Generate random events (equipment failures, rush orders, etc.)
   const generateRandomEvents = useCallback(
@@ -534,35 +555,36 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
       // Update elapsed time
       const newElapsedTime = prevState.session.elapsedTime + deltaTime;
 
-      // Check for scheduled orders that should be released
-      const ordersToRelease: Order[] = [];
+      // Release scheduled orders to pendingOrders when their time arrives
+      // (but don't auto-start them - students must drag them to departments)
+      const orderReleaseEvents: GameEvent[] = [];
+      const releasedOrders: Order[] = [];
       const remainingScheduledOrders = prevState.scheduledOrders.filter(
         (scheduledOrder) => {
           if (scheduledOrder.releaseTime <= newElapsedTime) {
-            ordersToRelease.push(scheduledOrder.order);
-            return false; // Remove from scheduled orders
+            releasedOrders.push(scheduledOrder.order);
+            orderReleaseEvents.push({
+              id: `event-${Date.now()}-${Math.random()}`,
+              type: "order-generated",
+              timestamp: new Date(),
+              message: `New order received: ${scheduledOrder.order.id}`,
+              severity: "info",
+              orderId: scheduledOrder.order.id,
+            });
+            return false; // Remove from scheduled
           }
-          return true; // Keep in scheduled orders
+          return true; // Keep in scheduled
         }
       );
-
-      // Create events for newly released orders
-      const orderReleaseEvents: GameEvent[] = ordersToRelease.map((order) => ({
-        id: `event-${Date.now()}-${Math.random()}`,
-        type: "order-generated",
-        timestamp: new Date(),
-        message: `📋 New order received: ${order.id} from ${
-          order.customerName
-        } (${order.priority.toUpperCase()} priority)`,
-        severity: "info",
-        orderId: order.id,
-      }));
 
       // Generate new orders (always enabled for educational scenarios)
       const newOrders = generateNewOrders();
 
       // Update SLA status for all pending orders (always enabled for time pressure)
-      const updatedPendingOrders = prevState.pendingOrders.map(updateSLAStatus);
+      const updatedPendingOrders = [
+        ...prevState.pendingOrders,
+        ...releasedOrders,
+      ].map(updateSLAStatus);
 
       // Process department updates - only automatic processing if NOT in manual mode
       const { updatedDepartments, completedOrders, events } = prevState.session
@@ -613,11 +635,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           elapsedTime: newElapsedTime,
         },
         departments: updatedDepartments,
-        pendingOrders: [
-          ...updatedPendingOrders,
-          ...newOrders,
-          ...ordersToRelease,
-        ],
+        pendingOrders: [...updatedPendingOrders, ...newOrders],
+        // Scheduled orders are moved to pendingOrders when their releaseTime arrives
         scheduledOrders: remainingScheduledOrders,
         completedOrders: [...prevState.completedOrders, ...completedOrders],
         totalOrdersGenerated: prevState.totalOrdersGenerated + newOrders.length,
@@ -674,7 +693,13 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   // R13: Record decisions for undo/redo
   const recordDecision = useCallback(
     (
-      type: "order-release" | "game-pause" | "game-resume" | "settings-change",
+      type:
+        | "order-release"
+        | "game-pause"
+        | "game-resume"
+        | "settings-change"
+        | "order-hold"
+        | "order-resume",
       description: string,
       orderId?: string,
       previousState?: Partial<GameState>
@@ -702,60 +727,9 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     [currentDecisionIndex]
   );
 
-  // Release order from pending to first department
-  const releaseOrder = useCallback(
-    (orderId: string) => {
-      setGameState((prev) => {
-        const orderIndex = prev.pendingOrders.findIndex(
-          (o) => o.id === orderId
-        );
-        if (orderIndex === -1) return prev;
-
-        const order = prev.pendingOrders[orderIndex];
-        if (order.route.length === 0) return prev;
-
-        const firstDeptId = order.route[0];
-        const updatedOrder = {
-          ...order,
-          currentStepIndex: 0,
-          currentDepartment: firstDeptId,
-          status: "queued" as const,
-        };
-
-        const updatedDepartments = prev.departments.map((dept) =>
-          dept.id === firstDeptId
-            ? { ...dept, queue: [...dept.queue, updatedOrder] }
-            : dept
-        );
-
-        const updatedPendingOrders = prev.pendingOrders.filter(
-          (_, index) => index !== orderIndex
-        );
-
-        const newState = {
-          ...prev,
-          departments: updatedDepartments,
-          pendingOrders: updatedPendingOrders,
-        };
-
-        // Record decision for undo/redo
-        recordDecision(
-          "order-release",
-          `Released order ${orderId} to ${
-            prev.departments.find((d) => d.id === firstDeptId)?.name
-          }`,
-          orderId,
-          {
-            departments: prev.departments,
-            pendingOrders: prev.pendingOrders,
-          }
-        );
-
-        return newState;
-      });
-    },
-    [recordDecision]
-  );
+  // Release functionality removed: orders are started via drag-and-drop and
+  // manual start/complete controls. The previous `releaseOrder` helper has
+  // been removed to avoid accidental programmatic releases.
 
   // Effect to handle simulation loop
   useEffect(() => {
@@ -1089,6 +1063,95 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     [gameState, recordDecision]
   );
 
+  // Hold (pause) the current in-process order so another order can be processed
+  const holdProcessing = useCallback(
+    (departmentId: number) => {
+      const previousState = { ...gameState };
+
+      setGameState((prev) => {
+        const dept = prev.departments.find((d) => d.id === departmentId);
+        if (!dept || !dept.inProcess) return prev;
+
+        const processingOrder = dept.inProcess;
+
+        // Mark order as on-hold and push to end of queue so other orders may be processed
+        const heldOrder = {
+          ...processingOrder,
+          status: "on-hold" as const,
+          timestamps: [
+            ...processingOrder.timestamps,
+            { deptId: departmentId, start: new Date(), end: undefined as any },
+          ],
+        };
+
+        const updatedDepartments = prev.departments.map((d) => {
+          if (d.id === departmentId) {
+            return {
+              ...d,
+              inProcess: undefined,
+              queue: [...d.queue, heldOrder],
+              utilization: d.queue.length > 0 ? 75 : 0,
+              status: d.queue.length > 0 ? "available" : ("available" as const),
+            };
+          }
+          return d;
+        });
+
+        return {
+          ...prev,
+          departments: updatedDepartments,
+        };
+      });
+
+      recordDecision(
+        "order-hold",
+        `Held (paused) processing in Department ${departmentId}`,
+        undefined,
+        previousState
+      );
+    },
+    [gameState, recordDecision]
+  );
+
+  // Resume a held order by moving it to the front of its department queue and clearing on-hold
+  const resumeProcessing = useCallback(
+    (orderId: string) => {
+      const previousState = { ...gameState };
+
+      setGameState((prev) => {
+        const updatedDepartments = prev.departments.map((d) => {
+          const idx = d.queue.findIndex((q) => q.id === orderId);
+          if (idx !== -1) {
+            const order = d.queue[idx];
+            // Remove it from its position and place at front
+            const newQueue = [...d.queue.slice(0, idx), ...d.queue.slice(idx + 1)];
+            return {
+              ...d,
+              queue: [
+                { ...order, status: "queued" as const },
+                ...newQueue,
+              ],
+            };
+          }
+          return d;
+        });
+
+        return {
+          ...prev,
+          departments: updatedDepartments,
+        };
+      });
+
+      recordDecision(
+        "order-resume",
+        `Resumed held order ${orderId}`,
+        undefined,
+        previousState
+      );
+    },
+    [gameState, recordDecision]
+  );
+
   // Start processing in manual mode
   const startProcessing = useCallback(
     (departmentId: number) => {
@@ -1169,7 +1232,6 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     startGame,
     pauseGame,
     resetGame,
-    releaseOrder,
     optimizeOrderRoute,
     scheduleOrder,
     rebalanceWorkload,
@@ -1178,5 +1240,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     clearDecisionHistory,
     completeProcessing,
     startProcessing,
+    holdProcessing,
+    resumeProcessing,
   };
 };

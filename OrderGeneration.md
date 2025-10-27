@@ -167,3 +167,25 @@ getPriorityLabel(priority) // Returns formatted uppercase label
 - **Responsive Design**: Scales from individual cards to full department views
 
 The enhanced Make2Manage system now provides a comprehensive educational experience for learning make-to-order manufacturing concepts with increased order flow, better visual tracking, and improved decision-making opportunities! 🎯
+
+## 🛠️ New: Engineering Department (Design & Start)
+
+- Department ID: `5` — "Engineering" has been added as a first-class department in the simulation.
+- Routing rule: ~50% of generated orders will include Engineering in their route. When an order includes Engineering, the route is forced to START at Engineering (so `route[0] === 5`). This is implemented in the generator with a seeded random roll (`rng.next() < 0.5`).
+- UI: Engineering is shown in its own panel under the Order Management column (same column width) so students can manage engineering tasks separately from the production departments.
+
+### Recommended processing time defaults for Engineering
+
+- The game now computes processing time per-order using a small estimation helper that includes Engineering as a special case. The defaults used by the estimator are (minutes):
+	- Beginner: 2.5 minutes (engineering work is light)
+	- Intermediate: 5 minutes
+	- Advanced: 9 minutes
+
+- Non-engineering departments use an average of 3 minutes per step in the estimator by default. The estimator multiplies totals by complexity multipliers and any per-order processingTimeMultiplier (for half-orders), and applies a small rush multiplier (rush orders are slightly faster in the model — 0.85x) to simulate expedited handling.
+
+### How it affects generated orders
+
+- WIP orders: remaining processing time for in-progress orders is set to a random portion of the estimated full-route processing time (so students may inherit partly-complete engineering work).
+- Pending and scheduled orders: each order receives a `processingTime` value computed from the estimator and the order's attributes (half-orders, priority/rush). This value is used by the game timers and UI progress indicators.
+
+If you want different defaults (for example, make Engineering longer or shorter), I can adjust the constants in `src/utils/gameInitialization.ts` (the engineer-by-complexity map and the non-engineering-per-step default) and re-run a quick validation.

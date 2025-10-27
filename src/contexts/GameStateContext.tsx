@@ -10,7 +10,6 @@ interface GameStateContextType {
   startGame: () => void;
   pauseGame: () => void;
   resetGame: () => void;
-  releaseOrder: (orderId: string) => void;
   scheduleOrder: (
     orderId: string,
     departmentId: number,
@@ -27,6 +26,8 @@ interface GameStateContextType {
   optimizeOrderRoute: (orderId: string, newRoute: number[]) => void;
   completeProcessing: (departmentId: number) => void;
   startProcessing: (departmentId: number) => void;
+  holdProcessing: (departmentId: number) => void;
+  resumeProcessing: (orderId: string) => void;
 }
 
 const GameStateContext = createContext<GameStateContextType | null>(null);
@@ -50,7 +51,6 @@ export function GameStateProvider({
       startGame: gameSimulation.startGame,
       pauseGame: gameSimulation.pauseGame,
       resetGame: gameSimulation.resetGame,
-      releaseOrder: gameSimulation.releaseOrder,
       scheduleOrder: gameSimulation.scheduleOrder,
       rebalanceWorkload: gameSimulation.rebalanceWorkload,
       undoLastDecision: gameSimulation.undoLastDecision,
@@ -59,6 +59,8 @@ export function GameStateProvider({
       optimizeOrderRoute: gameSimulation.optimizeOrderRoute,
       completeProcessing: gameSimulation.completeProcessing,
       startProcessing: gameSimulation.startProcessing,
+  holdProcessing: gameSimulation.holdProcessing,
+  resumeProcessing: gameSimulation.resumeProcessing,
     };
 
     return (

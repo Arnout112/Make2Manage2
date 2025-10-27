@@ -48,7 +48,10 @@ export interface Order {
   priority: OrderPriority;
   orderType: OrderType;
   rushOrder: boolean;
-  dueDate: string;
+  // Absolute due date (legacy) - prefer using `dueGameMinutes` for in-game deadlines
+  dueDate?: string;
+  // New: due time in minutes measured from the start of the game session
+  dueGameMinutes?: number;
   requestedDeliveryDate: string;
   promisedDeliveryDate?: string;
 
