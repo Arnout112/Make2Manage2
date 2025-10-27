@@ -43,17 +43,24 @@ const RouteProgressIndicator: React.FC<RouteProgressIndicatorProps> = ({
 
   const classes = sizeClasses[size];
 
-  // Get number of completed steps based on timestamps with end dates
-  const completedSteps = order.timestamps.filter(
-    (timestamp) => timestamp.end
-  ).length;
+  // Check which departments have actually been completed (have end timestamp)
+  const completedDepartments = new Set(
+    order.timestamps
+      .filter((timestamp) => timestamp.end)
+      .map((timestamp) => timestamp.deptId)
+  );
+
+  // Find current department (has start but no end)
+  const currentDepartment = order.timestamps.find(
+    (timestamp) => timestamp.start && !timestamp.end
+  )?.deptId;
 
   return (
     <div className={classes.container}>
       {order.route.map((deptId, index) => {
-        const isCompleted = index < completedSteps;
-        const isCurrent =
-          index === completedSteps && order.status === "processing";
+        const isCompleted = completedDepartments.has(deptId);
+        const isCurrent = 
+          deptId === currentDepartment && order.status === "processing";
 
         return (
           <React.Fragment key={index}>

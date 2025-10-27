@@ -73,7 +73,7 @@ export const generateInitialWIP = (
 
   const orders: Order[] = [];
   for (let i = 0; i < wipCount; i++) {
-      const includeEngineering = rng.next() < 0.5;
+      const includeEngineering = rng.next() < 0.25; // 25% of orders go through Engineering
       const route = generateRandomRoute(rng, complexityLevel, includeEngineering);
     const currentStep = Math.floor(rng.between(0, route.length));
   const customer = rng.choice(customers);
@@ -171,7 +171,11 @@ export const generateRandomRoute = (
   complexityLevel: string,
   includeEngineeringStart: boolean = false
 ): number[] => {
-  const departments = [1, 2, 3, 4, 5];
+  // Engineering (5) should ONLY be in routes when explicitly requested
+  const departments = includeEngineeringStart 
+    ? [1, 2, 3, 4, 5] // Include Engineering in available departments
+    : [1, 2, 3, 4];    // Exclude Engineering from random selection
+  
   let routeLength: number;
 
   switch (complexityLevel) {
@@ -179,33 +183,49 @@ export const generateRandomRoute = (
       routeLength = Math.floor(rng.between(2, 4));
       break;
     case "intermediate":
-      routeLength = Math.floor(rng.between(3, 6));
+      routeLength = Math.floor(rng.between(3, 5)); // Max 5 departments
       break;
     case "advanced":
-      routeLength = Math.floor(rng.between(4, 8));
+      routeLength = Math.floor(rng.between(4, 5)); // Max 5 departments (all)
       break;
     default:
       routeLength = 4;
   }
 
   const route: number[] = [];
+  const usedDepartments = new Set<number>();
+
   // If route should start with Engineering (id 5), reserve the first slot
   if (includeEngineeringStart) {
     route.push(5);
+    usedDepartments.add(5);
   }
-  const slotsToGenerate = Math.max(0, routeLength - (includeEngineeringStart ? 1 : 0));
-  for (let i = 0; i < slotsToGenerate; i++) {
-    // Ensure we don't repeat the same department consecutively (90% of the time)
-    let nextDept: number;
-    do {
-      nextDept = rng.choice(departments);
-    } while (
-      route.length > 0 &&
-      route[route.length - 1] === nextDept &&
-      rng.next() < 0.9
-    );
 
+  const slotsToGenerate = Math.max(
+    0,
+    Math.min(routeLength - (includeEngineeringStart ? 1 : 0), 5 - usedDepartments.size)
+  );
+
+  // Available departments for selection (excluding already used)
+  let availableDepartments = departments.filter((d) => !usedDepartments.has(d));
+
+  for (let i = 0; i < slotsToGenerate && availableDepartments.length > 0; i++) {
+    // Pick a random department from available ones
+    const nextDept = rng.choice(availableDepartments);
     route.push(nextDept);
+    usedDepartments.add(nextDept);
+
+    // Update available departments
+    availableDepartments = departments.filter((d) => !usedDepartments.has(d));
+  }
+
+  // Validation: if Engineering (5) is in route, it MUST be first
+  if (route.includes(5) && route[0] !== 5) {
+    console.error('ROUTE GENERATION ERROR: Engineering must be first!', route);
+    // Fix: move Engineering to first position
+    const engineeringIndex = route.indexOf(5);
+    route.splice(engineeringIndex, 1);
+    route.unshift(5);
   }
 
   return route;
@@ -235,9 +255,9 @@ const computeEstimatedProcessingTime = (
   const nonEngineeringTime = 3; // avg minutes per non-engineering dept
 
   const engineeringByComplexity: Record<string, number> = {
-    beginner: 2.5,
-    intermediate: 5,
-    advanced: 9,
+    beginner: 1.25,    // halved from 2.5
+    intermediate: 2.5, // halved from 5
+    advanced: 4.5,     // halved from 9
   };
 
   const complexityMultiplier =
@@ -441,7 +461,7 @@ export const generateInitialOrders = (settings: GameSettings): Order[] => {
 
   const orders: Order[] = [];
   for (let i = 0; i < orderCount; i++) {
-      const includeEngineering = rng.next() < 0.5;
+      const includeEngineering = rng.next() < 0.25; // 25% of orders go through Engineering
       const route = generateRandomRoute(rng, settings.complexityLevel, includeEngineering);
     const customer = rng.choice(customers);
     const priority = rng.choice(priorities) as
@@ -717,7 +737,7 @@ export const generateScheduledOrders = (
       releaseTime = rng.between(baseTime, baseTime + interval);
     }
 
-    const includeEngineering = rng.next() < 0.5;
+    const includeEngineering = rng.next() < 0.25; // 25% of orders go through Engineering
     const route = generateRandomRoute(rng, settings.complexityLevel, includeEngineering);
     const customers = [
       { id: "CUST-001", name: "Acme Manufacturing", tier: "vip" },
@@ -781,7 +801,7 @@ export const generateScheduledOrders = (
       status: "queued",
       timestamps: [],
       reworkCount: 0,
-      createdAt: new Date(Date.now() + releaseTime),
+      createdAt: new Date(), // Order is created now, will be released later
       slaStatus: "on-track",
       rushOrder: isRush,
       processingTime: estimated,

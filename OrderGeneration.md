@@ -171,15 +171,19 @@ The enhanced Make2Manage system now provides a comprehensive educational experie
 ## 🛠️ New: Engineering Department (Design & Start)
 
 - Department ID: `5` — "Engineering" has been added as a first-class department in the simulation.
-- Routing rule: ~50% of generated orders will include Engineering in their route. When an order includes Engineering, the route is forced to START at Engineering (so `route[0] === 5`). This is implemented in the generator with a seeded random roll (`rng.next() < 0.5`).
+- **Routing rule**: ~25% of generated orders will include Engineering in their route (reduced from 50% to prevent bottlenecks). When an order includes Engineering, the route is forced to START at Engineering (so `route[0] === 5`). This is implemented in the generator with a seeded random roll (`rng.next() < 0.25`).
+- **Enforcement Rule**: Orders that require Engineering **MUST** visit Engineering first before any other department. The game validates this during drag-and-drop:
+  - ✅ If an order includes Engineering in its route, students can only assign it to Engineering as the first step
+  - ❌ Attempting to assign to other departments first will show an alert: "Order requires Engineering approval first!"
+  - 🔧 Visual feedback: Manufacturing departments show "Awaiting Engineering approval" badge and are grayed out when dragging orders that need Engineering
 - UI: Engineering is shown in its own panel under the Order Management column (same column width) so students can manage engineering tasks separately from the production departments.
 
 ### Recommended processing time defaults for Engineering
 
 - The game now computes processing time per-order using a small estimation helper that includes Engineering as a special case. The defaults used by the estimator are (minutes):
-	- Beginner: 2.5 minutes (engineering work is light)
-	- Intermediate: 5 minutes
-	- Advanced: 9 minutes
+	- Beginner: 1.25 minutes (halved - engineering work is streamlined)
+	- Intermediate: 2.5 minutes (halved - faster approvals)
+	- Advanced: 4.5 minutes (halved - optimized review process)
 
 - Non-engineering departments use an average of 3 minutes per step in the estimator by default. The estimator multiplies totals by complexity multipliers and any per-order processingTimeMultiplier (for half-orders), and applies a small rush multiplier (rush orders are slightly faster in the model — 0.85x) to simulate expedited handling.
 

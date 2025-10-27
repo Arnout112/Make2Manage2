@@ -127,7 +127,56 @@ export default function GameScreen() {
     // Check if this order's route includes this department
     if (!order.route.includes(departmentId)) {
       alert(
-        `Order ${order.id} does not include ${department.name} in its route.`
+        `❌ Order ${order.id} does not include ${department.name} in its route.\n\n` +
+        `Route: ${order.route.map(id => {
+          const d = gameState.departments.find(dept => dept.id === id);
+          return d ? d.name : `Dept ${id}`;
+        }).join(' → ')}`
+      );
+      return;
+    }
+
+    // Check if this department step was already completed
+    const completedDepartments = order.timestamps
+      .filter((t) => t.end) // Only timestamps with end time are completed
+      .map((t) => t.deptId);
+
+    if (completedDepartments.includes(departmentId)) {
+      alert(
+        `⚠️ Order ${order.id} has already completed ${department.name}!\n\n` +
+        `Each department can only process an order once.\n\n` +
+        `Completed steps: ${completedDepartments.map(id => {
+          const d = gameState.departments.find(dept => dept.id === id);
+          return d ? d.name : `Dept ${id}`;
+        }).join(' → ')}`
+      );
+      return;
+    }
+
+    // Check if Engineering (id=5) must be first and hasn't been completed yet
+    const requiresEngineering = order.route.includes(5);
+    const engineeringCompleted = completedDepartments.includes(5);
+    const hasStartedProcessing = completedDepartments.length > 0;
+
+    if (requiresEngineering && !engineeringCompleted && departmentId !== 5 && hasStartedProcessing) {
+      // Already started processing but Engineering not done yet - shouldn't happen
+      alert(
+        `⚠️ Order ${order.id} requires Engineering approval first!\n\n` +
+        `This order cannot proceed to ${department.name} until Engineering has completed their review.`
+      );
+      return;
+    }
+
+    if (requiresEngineering && !engineeringCompleted && departmentId !== 5 && !hasStartedProcessing) {
+      // First assignment attempt to non-Engineering department
+      const engineeringDept = gameState.departments.find((d) => d.id === 5);
+      alert(
+        `🔧 Order ${order.id} requires Engineering approval first!\n\n` +
+        `This order must start at ${engineeringDept?.name || 'Engineering'} before moving to other departments.\n\n` +
+        `Route: ${order.route.map(id => {
+          const d = gameState.departments.find(dept => dept.id === id);
+          return d ? d.name : `Dept ${id}`;
+        }).join(' → ')}`
       );
       return;
     }
@@ -602,12 +651,19 @@ export default function GameScreen() {
               departmentPriorityRules[eng.id]
             );
             const capacityPercentage = (eng.wipCount / eng.maxQueueSize) * 100;
+            const isCompleted = draggedOrder
+              ? draggedOrder.timestamps.some(
+                  (t) => t.deptId === eng.id && t.end
+                )
+              : false;
 
             return (
               <div className="mt-4">
                 <div
                   className={`bg-white rounded-xl p-4 shadow-sm border-2 transition-all duration-300 min-h-[160px] relative ${
-                    draggedOrder && draggedOrder.route.includes(eng.id)
+                    draggedOrder && isCompleted
+                      ? "border-gray-400 bg-gray-200 opacity-50 cursor-not-allowed"
+                      : draggedOrder && draggedOrder.route.includes(eng.id)
                       ? "border-green-500 bg-green-50 shadow-lg scale-105 ring-2 ring-green-200"
                       : draggedOrder && !draggedOrder.route.includes(eng.id)
                       ? "border-red-300 bg-red-50 opacity-60"
@@ -621,25 +677,72 @@ export default function GameScreen() {
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-800">Engineering</h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
+                          #{eng.id}
+                        </span>
+                        <h4 className="text-lg font-semibold text-gray-800">Engineering</h4>
+                      </div>
                       <div className="text-xs text-gray-600">Engineering review & approvals</div>
                     </div>
-                    <div className="text-sm text-gray-600">WIP {eng.wipCount}/{eng.maxQueueSize}</div>
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={departmentPriorityRules[eng.id]}
+                        onChange={(e) =>
+                          handleChangePriorityRule(
+                            eng.id,
+                            e.target.value as PriorityRule
+                          )
+                        }
+                        className="text-xs p-1 border-2 border-purple-400 rounded-md bg-purple-100 text-purple-800 font-medium hover:bg-purple-200 focus:bg-purple-200 focus:border-purple-500 transition-colors"
+                        title="Priority Rule"
+                      >
+                        <option value="FIFO">FIFO</option>
+                        <option value="EDD">EDD</option>
+                        <option value="SPT">SPT</option>
+                      </select>
+                      <div className="text-sm text-gray-600">WIP {eng.wipCount}/{eng.maxQueueSize}</div>
+                    </div>
                   </div>
 
                   <div className="text-sm font-medium text-gray-700 mb-2">Queue ({sortedQueue.length})</div>
                   {sortedQueue.length > 0 ? (
                     <div className="space-y-2 max-h-28 overflow-y-auto">
-                      {sortedQueue.map((order, idx) => (
-                        <div key={order.id} className="flex items-center justify-between p-2 rounded border border-gray-200 bg-white text-xs">
-                          <div className="flex items-center space-x-2">
-                            <span className="w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">{idx + 1}</span>
-                            <OrderColorDot orderId={order.id} size="xs" />
-                            <span className="font-medium">{order.id}</span>
+                      {sortedQueue.map((order, idx) => {
+                        const orderColor = getOrderColor(order.id);
+                        return (
+                          <div 
+                            key={order.id} 
+                            className="flex items-center justify-between p-2 rounded border border-gray-200 bg-white text-xs"
+                            style={{
+                              borderTopColor: orderColor.dot,
+                              borderTopWidth: "3px",
+                            }}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <span className="w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">{idx + 1}</span>
+                              <OrderColorDot orderId={order.id} size="xs" />
+                              <span className="font-medium">{order.id}</span>
+                            </div>
+                            <div className="text-right">
+                              <div className={`text-xs font-medium ${getPriorityTextColor(order.priority)}`}>
+                                {getPriorityLabel(order.priority)}
+                              </div>
+                              {/* Resume button for held orders */}
+                              {order.status === "on-hold" && (
+                                <div className="mt-1">
+                                  <button
+                                    onClick={() => handleResumeOrder(order.id)}
+                                    className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200"
+                                  >
+                                    Resume
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-600">{order.priority.toUpperCase()}</div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-gray-500 text-center py-4 text-xs">No engineering tasks</div>
@@ -691,13 +794,24 @@ export default function GameScreen() {
                         const timeRemaining = eng.inProcess.processingTimeRemaining || 0;
                         const isComplete = timeRemaining <= 0;
                         return (
-                          <button
-                            onClick={() => handleCompleteProcessing(eng.id)}
-                            disabled={!isComplete}
-                            className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${isComplete ? "bg-green-600 text-white hover:bg-green-700 animate-pulse" : "bg-gray-400 text-gray-600 cursor-not-allowed"}`}
-                          >
-                            {isComplete ? "✅ Complete Processing" : `⏳ Processing... (${formatTime(timeRemaining)})`}
-                          </button>
+                          <div className="space-y-2">
+                            {/* Hold button allows pausing current work so another order can run */}
+                            {!isComplete && (
+                              <button
+                                onClick={() => handleHoldProcessing(eng.id)}
+                                className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-800 hover:bg-gray-300`}
+                              >
+                                ⏸ Hold (pause)
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleCompleteProcessing(eng.id)}
+                              disabled={!isComplete}
+                              className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${isComplete ? "bg-green-600 text-white hover:bg-green-700 animate-pulse" : "bg-gray-400 text-gray-600 cursor-not-allowed"}`}
+                            >
+                              {isComplete ? "✅ Complete Processing" : `⏳ Processing... (${formatTime(timeRemaining)})`}
+                            </button>
+                          </div>
                         );
                       })()}
                     </div>
@@ -723,6 +837,20 @@ export default function GameScreen() {
               const capacityPercentage =
                 (dept.wipCount / dept.maxQueueSize) * 100;
 
+              const isCompleted = draggedOrder
+                ? draggedOrder.timestamps.some(
+                    (t) => t.deptId === dept.id && t.end
+                  )
+                : false;
+
+              // Check if Engineering must be completed first
+              const requiresEngineering = draggedOrder?.route.includes(5) ?? false;
+              const engineeringCompleted = draggedOrder
+                ? draggedOrder.timestamps.some((t) => t.deptId === 5 && t.end)
+                : false;
+              const blockedByEngineering = 
+                requiresEngineering && !engineeringCompleted && dept.id !== 5;
+
               return (
                 <div
                   key={dept.id}
@@ -732,7 +860,9 @@ export default function GameScreen() {
                     handleDropOnDepartment(dept.id);
                   }}
                   className={`bg-white rounded-xl p-6 shadow-sm border-2 transition-all duration-300 min-h-[380px] relative ${
-                    draggedOrder && draggedOrder.route.includes(dept.id)
+                    draggedOrder && (isCompleted || blockedByEngineering)
+                      ? "border-gray-400 bg-gray-200 opacity-50 cursor-not-allowed"
+                      : draggedOrder && draggedOrder.route.includes(dept.id)
                       ? "border-green-500 bg-green-50 shadow-lg scale-105 ring-2 ring-green-200"
                       : draggedOrder && !draggedOrder.route.includes(dept.id)
                       ? "border-red-300 bg-red-50 opacity-60"
@@ -745,12 +875,23 @@ export default function GameScreen() {
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-800">
-                        {dept.name}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
+                          #{dept.id}
+                        </span>
+                        <h3 className="text-xl font-semibold text-gray-800">
+                          {dept.name}
+                        </h3>
+                      </div>
                       <div className="text-xs text-gray-600 mt-1">
                         {dept.standardProcessingTime}min processing time
                       </div>
+                      {blockedByEngineering && (
+                        <div className="mt-2 flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-md border border-orange-300">
+                          <span>🔧</span>
+                          <span>Awaiting Engineering approval</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <Factory className="w-8 h-8 text-purple-600" />

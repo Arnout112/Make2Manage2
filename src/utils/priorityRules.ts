@@ -20,8 +20,11 @@ export const sortOrdersByPriorityRule = (orders: Order[], rule: PriorityRule): O
 
     case 'EDD': // Earliest Due Date
       return sortedOrders.sort((a, b) => {
-        // First sort by due date
-        const dueDateDiff = a.dueDate.getTime() - b.dueDate.getTime();
+        // Use dueGameMinutes if available, otherwise fall back to dueDate
+        const aDue = a.dueGameMinutes ?? (a.dueDate ? a.dueDate.getTime() : Number.MAX_SAFE_INTEGER);
+        const bDue = b.dueGameMinutes ?? (b.dueDate ? b.dueDate.getTime() : Number.MAX_SAFE_INTEGER);
+        
+        const dueDateDiff = aDue - bDue;
         if (dueDateDiff !== 0) return dueDateDiff;
         
         // If due dates are equal, use priority as tiebreaker

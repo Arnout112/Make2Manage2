@@ -12,7 +12,6 @@ import {
   SeededRandom,
   generateRandomRoute,
 } from "../utils/gameInitialization";
-import { generateOptimizedRoute } from "../utils/routeOptimization";
 
 export const useGameSimulation = (initialSettings: GameSettings) => {
   const [gameState, setGameState] = useState<GameState>(() =>
@@ -69,17 +68,11 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
 
     const newOrders: Order[] = [];
     if (rng.next() < generationChance) {
-      // R06: Use advanced routing logic for new orders
-      const route =
-        gameState.session.settings.enableAdvancedRouting !== false
-          ? generateOptimizedRoute(rng, gameState.departments, {
-              complexityLevel,
-              prioritizeSpeed: rng.next() < 0.3,
-              prioritizeCost: rng.next() < 0.3,
-              prioritizeReliability: rng.next() < 0.3,
-              avoidBottlenecks: rng.next() < 0.4,
-            })
-          : generateRandomRoute(rng, complexityLevel);
+      // Determine if this order should include Engineering (25% chance)
+      const includeEngineering = rng.next() < 0.25;
+      
+      // Generate route - always use generateRandomRoute to ensure Engineering-first rule
+      const route = generateRandomRoute(rng, complexityLevel, includeEngineering);
 
       const orderId = `ORD-${String(
         gameState.totalOrdersGenerated + 1
@@ -562,7 +555,12 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
       const remainingScheduledOrders = prevState.scheduledOrders.filter(
         (scheduledOrder) => {
           if (scheduledOrder.releaseTime <= newElapsedTime) {
-            releasedOrders.push(scheduledOrder.order);
+            // Update createdAt to current game time for proper FIFO ordering
+            const releasedOrder = {
+              ...scheduledOrder.order,
+              createdAt: new Date(),
+            };
+            releasedOrders.push(releasedOrder);
             orderReleaseEvents.push({
               id: `event-${Date.now()}-${Math.random()}`,
               type: "order-generated",
