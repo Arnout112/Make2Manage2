@@ -73,10 +73,10 @@ export const generateInitialWIP = (
 
   const orders: Order[] = [];
   for (let i = 0; i < wipCount; i++) {
-      const includeEngineering = rng.next() < 0.25; // 25% of orders go through Engineering
-      const route = generateRandomRoute(rng, complexityLevel, includeEngineering);
+    const includeEngineering = rng.next() < 0.25; // 25% of orders go through Engineering
+    const route = generateRandomRoute(rng, complexityLevel, includeEngineering);
     const currentStep = Math.floor(rng.between(0, route.length));
-  const customer = rng.choice(customers);
+    const customer = rng.choice(customers);
     const priority = rng.choice(priorities) as
       | "low"
       | "normal"
@@ -84,7 +84,7 @@ export const generateInitialWIP = (
       | "urgent";
 
     // Add half order logic to WIP as well
-  const isHalfOrder = rng.next() < 0.15; // 15% chance for WIP orders
+    const isHalfOrder = rng.next() < 0.15; // 15% chance for WIP orders
     const halfOrderReasons = [
       "defect_repair",
       "partial_work",
@@ -114,17 +114,14 @@ export const generateInitialWIP = (
     // For WIP, set remaining time as random portion of estimated
     const remainingTime = Math.max(1, Math.floor(rng.between(0.1, estimated)));
 
-    // Determine due time (in-game minutes) based on complexity
-    const dueRangeByComplexity: Record<string, [number, number]> = {
-      beginner: [20, 45],
-      intermediate: [15, 35],
-      advanced: [10, 25],
+    // Determine due time based on priority level (WIP orders are assumed to be mid-process)
+    const priorityDueTimes = {
+      urgent: 4, // 4 minutes from game start
+      high: 6, // 6 minutes from game start
+      normal: 8, // 8 minutes from game start
+      low: 10, // 10 minutes from game start
     };
-    const [minDue, maxDue] = dueRangeByComplexity[complexityLevel] || [15, 35];
-    const dueGameMinutes = Math.max(
-      1,
-      Math.floor(rng.between(minDue, maxDue))
-    );
+    const dueGameMinutes = priorityDueTimes[priority];
 
     orders.push({
       id: `WIP-${String(i + 1).padStart(3, "0")}`,
@@ -132,16 +129,16 @@ export const generateInitialWIP = (
       customerName: customer.name,
       priority,
       orderValue: rng.between(1500, 8000) * (isHalfOrder ? 0.6 : 1.0), // Adjust value for half orders
-  // legacy dueDate removed from active logic; keep createdAt for timestamps
-  dueGameMinutes,
+      // legacy dueDate removed from active logic; keep createdAt for timestamps
+      dueGameMinutes,
       route,
       currentStepIndex: currentStep,
       status: "processing",
       timestamps: generateTimestamps(route.slice(0, currentStep + 1)),
       reworkCount: 0,
       createdAt: new Date(Date.now() - rng.between(5, 15) * 60 * 1000), // Started 5-15 min ago
-  processingTime: estimated,
-  processingTimeRemaining: remainingTime,
+      processingTime: estimated,
+      processingTimeRemaining: remainingTime,
       currentDepartment: route[currentStep],
       slaStatus:
         rng.next() < 0.7
@@ -149,7 +146,7 @@ export const generateInitialWIP = (
           : rng.next() < 0.8
           ? "at-risk"
           : "overdue",
-  rushOrder: isRush,
+      rushOrder: isRush,
       isHalfOrder,
       halfOrderReason,
       processingTimeMultiplier,
@@ -172,10 +169,10 @@ export const generateRandomRoute = (
   includeEngineeringStart: boolean = false
 ): number[] => {
   // Engineering (5) should ONLY be in routes when explicitly requested
-  const departments = includeEngineeringStart 
+  const departments = includeEngineeringStart
     ? [1, 2, 3, 4, 5] // Include Engineering in available departments
-    : [1, 2, 3, 4];    // Exclude Engineering from random selection
-  
+    : [1, 2, 3, 4]; // Exclude Engineering from random selection
+
   let routeLength: number;
 
   switch (complexityLevel) {
@@ -203,7 +200,10 @@ export const generateRandomRoute = (
 
   const slotsToGenerate = Math.max(
     0,
-    Math.min(routeLength - (includeEngineeringStart ? 1 : 0), 5 - usedDepartments.size)
+    Math.min(
+      routeLength - (includeEngineeringStart ? 1 : 0),
+      5 - usedDepartments.size
+    )
   );
 
   // Available departments for selection (excluding already used)
@@ -221,7 +221,7 @@ export const generateRandomRoute = (
 
   // Validation: if Engineering (5) is in route, it MUST be first
   if (route.includes(5) && route[0] !== 5) {
-    console.error('ROUTE GENERATION ERROR: Engineering must be first!', route);
+    console.error("ROUTE GENERATION ERROR: Engineering must be first!", route);
     // Fix: move Engineering to first position
     const engineeringIndex = route.indexOf(5);
     route.splice(engineeringIndex, 1);
@@ -255,9 +255,9 @@ const computeEstimatedProcessingTime = (
   const nonEngineeringTime = 3; // avg minutes per non-engineering dept
 
   const engineeringByComplexity: Record<string, number> = {
-    beginner: 1.25,    // halved from 2.5
+    beginner: 1.25, // halved from 2.5
     intermediate: 2.5, // halved from 5
-    advanced: 4.5,     // halved from 9
+    advanced: 4.5, // halved from 9
   };
 
   const complexityMultiplier =
@@ -280,7 +280,8 @@ const computeEstimatedProcessingTime = (
     }
   }
 
-  total = total * complexityMultiplier * processingTimeMultiplier * rushMultiplier;
+  total =
+    total * complexityMultiplier * processingTimeMultiplier * rushMultiplier;
 
   // Minimum 1 minute, round up
   return Math.max(1, Math.round(total));
@@ -461,8 +462,12 @@ export const generateInitialOrders = (settings: GameSettings): Order[] => {
 
   const orders: Order[] = [];
   for (let i = 0; i < orderCount; i++) {
-      const includeEngineering = rng.next() < 0.25; // 25% of orders go through Engineering
-      const route = generateRandomRoute(rng, settings.complexityLevel, includeEngineering);
+    const includeEngineering = rng.next() < 0.25; // 25% of orders go through Engineering
+    const route = generateRandomRoute(
+      rng,
+      settings.complexityLevel,
+      includeEngineering
+    );
     const customer = rng.choice(customers);
     const priority = rng.choice(priorities) as
       | "low"
@@ -507,17 +512,16 @@ export const generateInitialOrders = (settings: GameSettings): Order[] => {
       baseValue * tierMultiplier * priorityMultiplier * halfOrderMultiplier
     );
 
-    // Determine due time based on complexity and session duration
-    const dueRangeByComplexity: Record<string, [number, number]> = {
-      beginner: [25, 55],
-      intermediate: [18, 40],
-      advanced: [12, 30],
+    // Determine due time based on priority level (for initial orders, assume they appear at game start)
+    const priorityDueTimes = {
+      urgent: 4, // 4 minutes from game start
+      high: 6, // 6 minutes from game start
+      normal: 8, // 8 minutes from game start
+      low: 10, // 10 minutes from game start
     };
-    const [minDue, maxDue] = dueRangeByComplexity[settings.complexityLevel] || [15, 45];
-    // Cap due minutes to session duration
+
     const cap = settings.sessionDuration || 30;
-    const extraDue = Math.max(1, Math.floor(rng.between(minDue, maxDue)));
-    const dueGameMinutes = Math.min(cap, extraDue);
+    const dueGameMinutes = Math.min(cap, priorityDueTimes[priority]);
 
     orders.push({
       id: `ORD-${String(i + 1).padStart(3, "0")}`,
@@ -525,7 +529,7 @@ export const generateInitialOrders = (settings: GameSettings): Order[] => {
       customerName: customer.name,
       priority,
       orderValue,
-        dueGameMinutes,
+      dueGameMinutes,
       route,
       currentStepIndex: -1, // Not started yet
       status: "queued",
@@ -533,8 +537,8 @@ export const generateInitialOrders = (settings: GameSettings): Order[] => {
       reworkCount: 0,
       createdAt: new Date(),
       slaStatus: "on-track",
-  rushOrder: isRush,
-  processingTime: estimated,
+      rushOrder: isRush,
+      processingTime: estimated,
       isHalfOrder,
       halfOrderReason,
       processingTimeMultiplier,
@@ -738,7 +742,11 @@ export const generateScheduledOrders = (
     }
 
     const includeEngineering = rng.next() < 0.25; // 25% of orders go through Engineering
-    const route = generateRandomRoute(rng, settings.complexityLevel, includeEngineering);
+    const route = generateRandomRoute(
+      rng,
+      settings.complexityLevel,
+      includeEngineering
+    );
     const customers = [
       { id: "CUST-001", name: "Acme Manufacturing", tier: "vip" },
       { id: "CUST-002", name: "TechCorp Solutions", tier: "premium" },
@@ -778,24 +786,28 @@ export const generateScheduledOrders = (
       processingTimeMultiplier,
       isRush
     );
-      // Determine due time (in-game minutes) based on complexity and release offset
-      const dueRangeByComplexity: Record<string, [number, number]> = {
-        beginner: [25, 55],
-        intermediate: [18, 40],
-        advanced: [12, 30],
-      };
-      const [minDue, maxDue] = dueRangeByComplexity[settings.complexityLevel] || [15, 45];
-      const cap = settings.sessionDuration || 30;
-      const extraDue = Math.max(1, Math.floor(rng.between(minDue, maxDue)));
-      const dueGameMinutes = Math.min(cap, Math.floor(releaseTime / 60000) + extraDue);
+    // Determine due time based on priority level and when the order appears
+    const priorityDueTimes = {
+      urgent: 4, // 4 minutes from when order appears
+      high: 6, // 6 minutes from when order appears
+      normal: 8, // 8 minutes from when order appears
+      low: 10, // 10 minutes from when order appears
+    };
 
-      const order: Order = {
+    const cap = settings.sessionDuration || 30;
+    const releaseTimeMinutes = Math.floor(releaseTime / 60000);
+    const dueGameMinutes = Math.min(
+      cap,
+      releaseTimeMinutes + priorityDueTimes[priority]
+    );
+
+    const order: Order = {
       id: `ORD-${String(i + 1).padStart(3, "0")}`,
       customerId: customer.id,
       customerName: customer.name,
       priority,
       orderValue,
-        dueGameMinutes,
+      dueGameMinutes,
       route,
       currentStepIndex: -1,
       status: "queued",

@@ -4,6 +4,51 @@
  */
 
 /**
+ * Format due time for orders based on priority and game context
+ */
+export function formatOrderDueTime(
+  dueGameMinutes: number | undefined,
+  priority: "low" | "normal" | "high" | "urgent",
+  currentElapsedMinutes: number
+): { display: string; isOverdue: boolean; timeRemaining: number } {
+  if (dueGameMinutes === undefined) {
+    return { display: "No due date", isOverdue: false, timeRemaining: 0 };
+  }
+
+  const timeRemaining = dueGameMinutes - currentElapsedMinutes;
+  const isOverdue = timeRemaining < 0;
+
+  const priorityLabels = {
+    urgent: "URGENT",
+    high: "HIGH",
+    normal: "NORMAL",
+    low: "LOW",
+  };
+
+  if (isOverdue) {
+    return {
+      display: `OVERDUE by ${Math.abs(timeRemaining).toFixed(0)}min`,
+      isOverdue: true,
+      timeRemaining,
+    };
+  } else if (timeRemaining < 1) {
+    return {
+      display: `Due NOW (${priorityLabels[priority]})`,
+      isOverdue: false,
+      timeRemaining,
+    };
+  } else {
+    return {
+      display: `Due in ${timeRemaining.toFixed(0)}min (${
+        priorityLabels[priority]
+      })`,
+      isOverdue: false,
+      timeRemaining,
+    };
+  }
+}
+
+/**
  * Format date for display in various contexts
  */
 export function formatDate(

@@ -3,7 +3,6 @@ import {
   Package,
   Factory,
   ShoppingCart,
-  
   XCircle,
   CheckCircle,
 } from "lucide-react";
@@ -26,6 +25,7 @@ import {
   getPriorityTextColor,
   getPriorityLabel,
 } from "../utils/priorityColors";
+import { formatOrderDueTime } from "../utils/dateUtils";
 import type { PriorityRule } from "../types";
 
 export default function GameScreen() {
@@ -36,15 +36,13 @@ export default function GameScreen() {
   );
   const [departmentPriorityRules, setDepartmentPriorityRules] = useState<{
     [key: number]: PriorityRule;
-  }>(
-    {
-      1: "FIFO", // Welding
-      2: "FIFO", // Machining
-      3: "FIFO", // Painting
-      4: "FIFO", // Assembly
-      5: "FIFO", // Engineering (rendered under Order Management)
-    }
-  );
+  }>({
+    1: "FIFO", // Welding
+    2: "FIFO", // Machining
+    3: "FIFO", // Painting
+    4: "FIFO", // Assembly
+    5: "FIFO", // Engineering (rendered under Order Management)
+  });
   const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
 
   // Note: Game settings are now managed centrally in GameStateProvider
@@ -72,12 +70,12 @@ export default function GameScreen() {
     clearDecisionHistory = sharedState.clearDecisionHistory;
     completeProcessing = sharedState.completeProcessing;
     startProcessing = sharedState.startProcessing;
-  // New: hold/resume actions for manual intervention
-  // Hold: pause current processing so a higher-priority order can be processed
-  // Resume: move a held order back to the front of the queue (teacher/student resumes it)
-  // (Both functions come from the simulation hook)
-  holdProcessing = sharedState.holdProcessing;
-  resumeProcessing = sharedState.resumeProcessing;
+    // New: hold/resume actions for manual intervention
+    // Hold: pause current processing so a higher-priority order can be processed
+    // Resume: move a held order back to the front of the queue (teacher/student resumes it)
+    // (Both functions come from the simulation hook)
+    holdProcessing = sharedState.holdProcessing;
+    resumeProcessing = sharedState.resumeProcessing;
   } catch (error) {
     return (
       <div className="flex-1 p-8 bg-red-50">
@@ -128,10 +126,12 @@ export default function GameScreen() {
     if (!order.route.includes(departmentId)) {
       alert(
         `❌ Order ${order.id} does not include ${department.name} in its route.\n\n` +
-        `Route: ${order.route.map(id => {
-          const d = gameState.departments.find(dept => dept.id === id);
-          return d ? d.name : `Dept ${id}`;
-        }).join(' → ')}`
+          `Route: ${order.route
+            .map((id) => {
+              const d = gameState.departments.find((dept) => dept.id === id);
+              return d ? d.name : `Dept ${id}`;
+            })
+            .join(" → ")}`
       );
       return;
     }
@@ -144,11 +144,13 @@ export default function GameScreen() {
     if (completedDepartments.includes(departmentId)) {
       alert(
         `⚠️ Order ${order.id} has already completed ${department.name}!\n\n` +
-        `Each department can only process an order once.\n\n` +
-        `Completed steps: ${completedDepartments.map(id => {
-          const d = gameState.departments.find(dept => dept.id === id);
-          return d ? d.name : `Dept ${id}`;
-        }).join(' → ')}`
+          `Each department can only process an order once.\n\n` +
+          `Completed steps: ${completedDepartments
+            .map((id) => {
+              const d = gameState.departments.find((dept) => dept.id === id);
+              return d ? d.name : `Dept ${id}`;
+            })
+            .join(" → ")}`
       );
       return;
     }
@@ -158,25 +160,39 @@ export default function GameScreen() {
     const engineeringCompleted = completedDepartments.includes(5);
     const hasStartedProcessing = completedDepartments.length > 0;
 
-    if (requiresEngineering && !engineeringCompleted && departmentId !== 5 && hasStartedProcessing) {
+    if (
+      requiresEngineering &&
+      !engineeringCompleted &&
+      departmentId !== 5 &&
+      hasStartedProcessing
+    ) {
       // Already started processing but Engineering not done yet - shouldn't happen
       alert(
         `⚠️ Order ${order.id} requires Engineering approval first!\n\n` +
-        `This order cannot proceed to ${department.name} until Engineering has completed their review.`
+          `This order cannot proceed to ${department.name} until Engineering has completed their review.`
       );
       return;
     }
 
-    if (requiresEngineering && !engineeringCompleted && departmentId !== 5 && !hasStartedProcessing) {
+    if (
+      requiresEngineering &&
+      !engineeringCompleted &&
+      departmentId !== 5 &&
+      !hasStartedProcessing
+    ) {
       // First assignment attempt to non-Engineering department
       const engineeringDept = gameState.departments.find((d) => d.id === 5);
       alert(
         `🔧 Order ${order.id} requires Engineering approval first!\n\n` +
-        `This order must start at ${engineeringDept?.name || 'Engineering'} before moving to other departments.\n\n` +
-        `Route: ${order.route.map(id => {
-          const d = gameState.departments.find(dept => dept.id === id);
-          return d ? d.name : `Dept ${id}`;
-        }).join(' → ')}`
+          `This order must start at ${
+            engineeringDept?.name || "Engineering"
+          } before moving to other departments.\n\n` +
+          `Route: ${order.route
+            .map((id) => {
+              const d = gameState.departments.find((dept) => dept.id === id);
+              return d ? d.name : `Dept ${id}`;
+            })
+            .join(" → ")}`
       );
       return;
     }
@@ -414,21 +430,22 @@ export default function GameScreen() {
                 {/* Quick Actions removed — manual drag-only release enforced */}
                 <div className="flex items-center justify-between mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-blue-900">Order Release</p>
+                    <p className="text-sm font-medium text-blue-900">
+                      Order Release
+                    </p>
                     <p className="text-xs text-blue-700">
                       Scheduled and pending orders must be started by dragging
-                      them onto a department. Automatic or batch release has been
-                      disabled to encourage student decision-making.
+                      them onto a department. Automatic or batch release has
+                      been disabled to encourage student decision-making.
                     </p>
                   </div>
                 </div>
-                
 
                 <div className="text-sm text-gray-600 mb-3 space-y-1">
                   <div>
-                    <strong>Instructions:</strong> Drag orders from the
-                    Pending list to the department where you want processing to
-                    start. Automatic release has been disabled.
+                    <strong>Instructions:</strong> Drag orders from the Pending
+                    list to the department where you want processing to start.
+                    Automatic release has been disabled.
                   </div>
                   {gameState.session.settings.manualMode && (
                     <div className="text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
@@ -501,13 +518,29 @@ export default function GameScreen() {
                                 </span>
                               )}
                             </div>
-                            <span className="text-gray-600">
-                              {order.dueGameMinutes !== undefined
-                                ? `${order.dueGameMinutes} min (game)`
-                                : order.dueDate
-                                ? order.dueDate.toLocaleDateString()
-                                : "—"}
-                            </span>
+                            {(() => {
+                              const currentElapsedMinutes = Math.floor(
+                                gameState.session.elapsedTime / 60000
+                              );
+                              const dueInfo = formatOrderDueTime(
+                                order.dueGameMinutes,
+                                order.priority,
+                                currentElapsedMinutes
+                              );
+                              return (
+                                <span
+                                  className={`text-xs font-medium ${
+                                    dueInfo.isOverdue
+                                      ? "text-red-600"
+                                      : dueInfo.timeRemaining < 2
+                                      ? "text-orange-600"
+                                      : "text-gray-600"
+                                  }`}
+                                >
+                                  {dueInfo.display}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </div>
 
@@ -668,7 +701,9 @@ export default function GameScreen() {
                       : draggedOrder && !draggedOrder.route.includes(eng.id)
                       ? "border-red-300 bg-red-50 opacity-60"
                       : "border-gray-200"
-                  } ${capacityPercentage > 90 ? "border-red-300 bg-red-50" : ""}`}
+                  } ${
+                    capacityPercentage > 90 ? "border-red-300 bg-red-50" : ""
+                  }`}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
@@ -681,9 +716,13 @@ export default function GameScreen() {
                         <span className="text-sm font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
                           #{eng.id}
                         </span>
-                        <h4 className="text-lg font-semibold text-gray-800">Engineering</h4>
+                        <h4 className="text-lg font-semibold text-gray-800">
+                          Engineering
+                        </h4>
                       </div>
-                      <div className="text-xs text-gray-600">Engineering review & approvals</div>
+                      <div className="text-xs text-gray-600">
+                        Engineering review & approvals
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <select
@@ -701,18 +740,22 @@ export default function GameScreen() {
                         <option value="EDD">EDD</option>
                         <option value="SPT">SPT</option>
                       </select>
-                      <div className="text-sm text-gray-600">WIP {eng.wipCount}/{eng.maxQueueSize}</div>
+                      <div className="text-sm text-gray-600">
+                        WIP {eng.wipCount}/{eng.maxQueueSize}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="text-sm font-medium text-gray-700 mb-2">Queue ({sortedQueue.length})</div>
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    Queue ({sortedQueue.length})
+                  </div>
                   {sortedQueue.length > 0 ? (
                     <div className="space-y-2 max-h-28 overflow-y-auto">
                       {sortedQueue.map((order, idx) => {
                         const orderColor = getOrderColor(order.id);
                         return (
-                          <div 
-                            key={order.id} 
+                          <div
+                            key={order.id}
                             className="flex items-center justify-between p-2 rounded border border-gray-200 bg-white text-xs"
                             style={{
                               borderTopColor: orderColor.dot,
@@ -720,12 +763,18 @@ export default function GameScreen() {
                             }}
                           >
                             <div className="flex items-center space-x-2">
-                              <span className="w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">{idx + 1}</span>
+                              <span className="w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                {idx + 1}
+                              </span>
                               <OrderColorDot orderId={order.id} size="xs" />
                               <span className="font-medium">{order.id}</span>
                             </div>
                             <div className="text-right">
-                              <div className={`text-xs font-medium ${getPriorityTextColor(order.priority)}`}>
+                              <div
+                                className={`text-xs font-medium ${getPriorityTextColor(
+                                  order.priority
+                                )}`}
+                              >
                                 {getPriorityLabel(order.priority)}
                               </div>
                               {/* Resume button for held orders */}
@@ -745,39 +794,67 @@ export default function GameScreen() {
                       })}
                     </div>
                   ) : (
-                    <div className="text-gray-500 text-center py-4 text-xs">No engineering tasks</div>
+                    <div className="text-gray-500 text-center py-4 text-xs">
+                      No engineering tasks
+                    </div>
                   )}
 
-                  {gameState.session.settings.manualMode && !eng.inProcess && sortedQueue.length > 0 && (
-                    <button
-                      onClick={() => handleStartProcessing(eng.id)}
-                      className="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-green-700 transition-colors"
-                    >
-                      Start Processing {sortedQueue[0].id}
-                    </button>
-                  )}
+                  {gameState.session.settings.manualMode &&
+                    !eng.inProcess &&
+                    sortedQueue.length > 0 && (
+                      <button
+                        onClick={() => handleStartProcessing(eng.id)}
+                        className="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-green-700 transition-colors"
+                      >
+                        Start Processing {sortedQueue[0].id}
+                      </button>
+                    )}
 
                   {eng.inProcess && (
                     <div className="mt-2 p-2 border rounded-lg bg-white">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
                           <OrderColorDot orderId={eng.inProcess.id} size="sm" />
-                          <span className="text-sm font-medium text-blue-900">Processing: {eng.inProcess.id}</span>
+                          <span className="text-sm font-medium text-blue-900">
+                            Processing: {eng.inProcess.id}
+                          </span>
                         </div>
-                        <span className={`text-xs font-bold ${(eng.inProcess.processingTimeRemaining || 0) > 0 ? "text-orange-600" : "text-green-600"}`}>
-                          {(eng.inProcess.processingTimeRemaining || 0) > 0 ? formatTime(eng.inProcess.processingTimeRemaining) : "READY ✅"}
+                        <span
+                          className={`text-xs font-bold ${
+                            (eng.inProcess.processingTimeRemaining || 0) > 0
+                              ? "text-orange-600"
+                              : "text-green-600"
+                          }`}
+                        >
+                          {(eng.inProcess.processingTimeRemaining || 0) > 0
+                            ? formatTime(eng.inProcess.processingTimeRemaining)
+                            : "READY ✅"}
                         </span>
                       </div>
 
                       {/* Small progress bar */}
                       {(() => {
-                        const timeRemaining = eng.inProcess.processingTimeRemaining || 0;
+                        const timeRemaining =
+                          eng.inProcess.processingTimeRemaining || 0;
                         const totalTime = eng.inProcess.processingTime || 1;
-                        const progress = Math.max(0, Math.min(100, ((totalTime - timeRemaining) / totalTime) * 100));
+                        const progress = Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            ((totalTime - timeRemaining) / totalTime) * 100
+                          )
+                        );
                         return (
                           <div className="mb-2">
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div className={`h-2 rounded-full transition-all duration-1000 ${progress >= 100 ? "bg-green-500" : "bg-blue-500"}`} style={{ width: `${progress}%` }}></div>
+                              <div
+                                className={`h-2 rounded-full transition-all duration-1000 ${
+                                  progress >= 100
+                                    ? "bg-green-500"
+                                    : "bg-blue-500"
+                                }`}
+                                style={{ width: `${progress}%` }}
+                              ></div>
                             </div>
                           </div>
                         );
@@ -785,13 +862,18 @@ export default function GameScreen() {
 
                       <div className="text-xs mb-2">
                         <span className="text-blue-700">Priority: </span>
-                        <span className={`font-medium ${getPriorityTextColor(eng.inProcess.priority)}`}>
+                        <span
+                          className={`font-medium ${getPriorityTextColor(
+                            eng.inProcess.priority
+                          )}`}
+                        >
                           {getPriorityLabel(eng.inProcess.priority)}
                         </span>
                       </div>
 
                       {(() => {
-                        const timeRemaining = eng.inProcess.processingTimeRemaining || 0;
+                        const timeRemaining =
+                          eng.inProcess.processingTimeRemaining || 0;
                         const isComplete = timeRemaining <= 0;
                         return (
                           <div className="space-y-2">
@@ -807,9 +889,17 @@ export default function GameScreen() {
                             <button
                               onClick={() => handleCompleteProcessing(eng.id)}
                               disabled={!isComplete}
-                              className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${isComplete ? "bg-green-600 text-white hover:bg-green-700 animate-pulse" : "bg-gray-400 text-gray-600 cursor-not-allowed"}`}
+                              className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                isComplete
+                                  ? "bg-green-600 text-white hover:bg-green-700 animate-pulse"
+                                  : "bg-gray-400 text-gray-600 cursor-not-allowed"
+                              }`}
                             >
-                              {isComplete ? "✅ Complete Processing" : `⏳ Processing... (${formatTime(timeRemaining)})`}
+                              {isComplete
+                                ? "✅ Complete Processing"
+                                : `⏳ Processing... (${formatTime(
+                                    timeRemaining
+                                  )})`}
                             </button>
                           </div>
                         );
@@ -828,369 +918,384 @@ export default function GameScreen() {
             Manufacturing Departments
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {gameState.departments.filter((d) => d.id !== 5).map((dept) => {
-              const priorityRule = departmentPriorityRules[dept.id];
-              const sortedQueue = sortOrdersByPriorityRule(
-                dept.queue,
-                priorityRule
-              );
-              const capacityPercentage =
-                (dept.wipCount / dept.maxQueueSize) * 100;
+            {gameState.departments
+              .filter((d) => d.id !== 5)
+              .map((dept) => {
+                const priorityRule = departmentPriorityRules[dept.id];
+                const sortedQueue = sortOrdersByPriorityRule(
+                  dept.queue,
+                  priorityRule
+                );
+                const capacityPercentage =
+                  (dept.wipCount / dept.maxQueueSize) * 100;
 
-              const isCompleted = draggedOrder
-                ? draggedOrder.timestamps.some(
-                    (t) => t.deptId === dept.id && t.end
-                  )
-                : false;
+                const isCompleted = draggedOrder
+                  ? draggedOrder.timestamps.some(
+                      (t) => t.deptId === dept.id && t.end
+                    )
+                  : false;
 
-              // Check if Engineering must be completed first
-              const requiresEngineering = draggedOrder?.route.includes(5) ?? false;
-              const engineeringCompleted = draggedOrder
-                ? draggedOrder.timestamps.some((t) => t.deptId === 5 && t.end)
-                : false;
-              const blockedByEngineering = 
-                requiresEngineering && !engineeringCompleted && dept.id !== 5;
+                // Check if Engineering must be completed first
+                const requiresEngineering =
+                  draggedOrder?.route.includes(5) ?? false;
+                const engineeringCompleted = draggedOrder
+                  ? draggedOrder.timestamps.some((t) => t.deptId === 5 && t.end)
+                  : false;
+                const blockedByEngineering =
+                  requiresEngineering && !engineeringCompleted && dept.id !== 5;
 
-              return (
-                <div
-                  key={dept.id}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    handleDropOnDepartment(dept.id);
-                  }}
-                  className={`bg-white rounded-xl p-6 shadow-sm border-2 transition-all duration-300 min-h-[380px] relative ${
-                    draggedOrder && (isCompleted || blockedByEngineering)
-                      ? "border-gray-400 bg-gray-200 opacity-50 cursor-not-allowed"
-                      : draggedOrder && draggedOrder.route.includes(dept.id)
-                      ? "border-green-500 bg-green-50 shadow-lg scale-105 ring-2 ring-green-200"
-                      : draggedOrder && !draggedOrder.route.includes(dept.id)
-                      ? "border-red-300 bg-red-50 opacity-60"
-                      : draggedOrder
-                      ? "border-gray-300 bg-gray-100 opacity-80"
-                      : "border-gray-200"
-                  } ${
-                    capacityPercentage > 90 ? "border-red-300 bg-red-50" : ""
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
-                          #{dept.id}
-                        </span>
-                        <h3 className="text-xl font-semibold text-gray-800">
-                          {dept.name}
-                        </h3>
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {dept.standardProcessingTime}min processing time
-                      </div>
-                      {blockedByEngineering && (
-                        <div className="mt-2 flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-md border border-orange-300">
-                          <span>🔧</span>
-                          <span>Awaiting Engineering approval</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <Factory className="w-8 h-8 text-purple-600" />
-                      <select
-                        value={priorityRule}
-                        onChange={(e) =>
-                          handleChangePriorityRule(
-                            dept.id,
-                            e.target.value as PriorityRule
-                          )
-                        }
-                        className="text-xs p-1 border-2 border-purple-400 rounded-md bg-purple-100 text-purple-800 font-medium hover:bg-purple-200 focus:bg-purple-200 focus:border-purple-500 transition-colors"
-                        title="Priority Rule"
-                      >
-                        <option value="FIFO">FIFO</option>
-                        <option value="EDD">EDD</option>
-                        <option value="SPT">SPT</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* WIP Capacity Section */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="font-medium text-gray-700">
-                        WIP Capacity
-                      </span>
-                      <span className="text-gray-600">
-                        {dept.wipCount}/{dept.maxQueueSize}
-                      </span>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          capacityPercentage > 90
-                            ? "bg-red-500"
-                            : capacityPercentage > 75
-                            ? "bg-yellow-500"
-                            : "bg-green-500"
-                        }`}
-                        style={{
-                          width: `${Math.min(capacityPercentage, 100)}%`,
-                        }}
-                      ></div>
-                    </div>
-
-                    {/* Queue Statistics */}
-                    <div className="grid grid-cols-3 gap-4 text-center text-xs">
+                return (
+                  <div
+                    key={dept.id}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDropOnDepartment(dept.id);
+                    }}
+                    className={`bg-white rounded-xl p-6 shadow-sm border-2 transition-all duration-300 min-h-[380px] relative ${
+                      draggedOrder && (isCompleted || blockedByEngineering)
+                        ? "border-gray-400 bg-gray-200 opacity-50 cursor-not-allowed"
+                        : draggedOrder && draggedOrder.route.includes(dept.id)
+                        ? "border-green-500 bg-green-50 shadow-lg scale-105 ring-2 ring-green-200"
+                        : draggedOrder && !draggedOrder.route.includes(dept.id)
+                        ? "border-red-300 bg-red-50 opacity-60"
+                        : draggedOrder
+                        ? "border-gray-300 bg-gray-100 opacity-80"
+                        : "border-gray-200"
+                    } ${
+                      capacityPercentage > 90 ? "border-red-300 bg-red-50" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <div className="font-medium text-gray-600">Queue</div>
-                        <div className="text-lg font-bold text-gray-800">
-                          {dept.queue.length}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
+                            #{dept.id}
+                          </span>
+                          <h3 className="text-xl font-semibold text-gray-800">
+                            {dept.name}
+                          </h3>
                         </div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          {dept.standardProcessingTime}min processing time
+                        </div>
+                        {blockedByEngineering && (
+                          <div className="mt-2 flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-md border border-orange-300">
+                            <span>🔧</span>
+                            <span>Awaiting Engineering approval</span>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <div className="font-medium text-gray-600">
-                          Processing
-                        </div>
-                        <div className="text-lg font-bold text-gray-800">
-                          {dept.inProcess ? 1 : 0}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-600">
-                          Utilization
-                        </div>
-                        <div className="text-lg font-bold text-gray-800">
-                          {Math.round(capacityPercentage)}%
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Currently Processing Order */}
-                  {dept.inProcess &&
-                    (() => {
-                      const orderColor = getOrderColor(dept.inProcess.id);
-                      return (
-                        <div
-                          className={`mb-4 p-3 border rounded-lg transition-all ${
-                            (dept.inProcess.processingTimeRemaining || 0) > 0
-                              ? "bg-white border-gray-200"
-                              : "bg-green-50 border-green-300"
-                          }`}
-                          style={
-                            (dept.inProcess.processingTimeRemaining || 0) > 0
-                              ? {
-                                  borderTopColor: orderColor.dot,
-                                  borderTopWidth: "4px",
-                                }
-                              : undefined
+                      <div className="flex flex-col items-end gap-2">
+                        <Factory className="w-8 h-8 text-purple-600" />
+                        <select
+                          value={priorityRule}
+                          onChange={(e) =>
+                            handleChangePriorityRule(
+                              dept.id,
+                              e.target.value as PriorityRule
+                            )
                           }
+                          className="text-xs p-1 border-2 border-purple-400 rounded-md bg-purple-100 text-purple-800 font-medium hover:bg-purple-200 focus:bg-purple-200 focus:border-purple-500 transition-colors"
+                          title="Priority Rule"
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <OrderColorDot
-                                orderId={dept.inProcess.id}
-                                size="sm"
-                              />
-                              <span className="text-sm font-medium text-blue-900">
-                                Processing: {dept.inProcess.id}
+                          <option value="FIFO">FIFO</option>
+                          <option value="EDD">EDD</option>
+                          <option value="SPT">SPT</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* WIP Capacity Section */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="font-medium text-gray-700">
+                          WIP Capacity
+                        </span>
+                        <span className="text-gray-600">
+                          {dept.wipCount}/{dept.maxQueueSize}
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            capacityPercentage > 90
+                              ? "bg-red-500"
+                              : capacityPercentage > 75
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                          }`}
+                          style={{
+                            width: `${Math.min(capacityPercentage, 100)}%`,
+                          }}
+                        ></div>
+                      </div>
+
+                      {/* Queue Statistics */}
+                      <div className="grid grid-cols-3 gap-4 text-center text-xs">
+                        <div>
+                          <div className="font-medium text-gray-600">Queue</div>
+                          <div className="text-lg font-bold text-gray-800">
+                            {dept.queue.length}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-600">
+                            Processing
+                          </div>
+                          <div className="text-lg font-bold text-gray-800">
+                            {dept.inProcess ? 1 : 0}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-600">
+                            Utilization
+                          </div>
+                          <div className="text-lg font-bold text-gray-800">
+                            {Math.round(capacityPercentage)}%
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Currently Processing Order */}
+                    {dept.inProcess &&
+                      (() => {
+                        const orderColor = getOrderColor(dept.inProcess.id);
+                        return (
+                          <div
+                            className={`mb-4 p-3 border rounded-lg transition-all ${
+                              (dept.inProcess.processingTimeRemaining || 0) > 0
+                                ? "bg-white border-gray-200"
+                                : "bg-green-50 border-green-300"
+                            }`}
+                            style={
+                              (dept.inProcess.processingTimeRemaining || 0) > 0
+                                ? {
+                                    borderTopColor: orderColor.dot,
+                                    borderTopWidth: "4px",
+                                  }
+                                : undefined
+                            }
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <OrderColorDot
+                                  orderId={dept.inProcess.id}
+                                  size="sm"
+                                />
+                                <span className="text-sm font-medium text-blue-900">
+                                  Processing: {dept.inProcess.id}
+                                </span>
+                              </div>
+                              <span
+                                className={`text-xs font-bold ${
+                                  (dept.inProcess.processingTimeRemaining ||
+                                    0) > 0
+                                    ? "text-orange-600"
+                                    : "text-green-600"
+                                }`}
+                              >
+                                {(dept.inProcess.processingTimeRemaining || 0) >
+                                0
+                                  ? formatTime(
+                                      dept.inProcess.processingTimeRemaining
+                                    )
+                                  : "READY ✅"}
                               </span>
                             </div>
-                            <span
-                              className={`text-xs font-bold ${
-                                (dept.inProcess.processingTimeRemaining || 0) >
-                                0
-                                  ? "text-orange-600"
-                                  : "text-green-600"
-                              }`}
-                            >
-                              {(dept.inProcess.processingTimeRemaining || 0) > 0
-                                ? formatTime(
-                                    dept.inProcess.processingTimeRemaining
-                                  )
-                                : "READY ✅"}
-                            </span>
-                          </div>
 
-                          {/* Progress Bar */}
-                          {(() => {
-                            const timeRemaining =
-                              dept.inProcess.processingTimeRemaining || 0;
-                            const totalTime =
-                              dept.inProcess.processingTime || 1;
-                            const progress = Math.max(
-                              0,
-                              Math.min(
-                                100,
-                                ((totalTime - timeRemaining) / totalTime) * 100
-                              )
-                            );
+                            {/* Progress Bar */}
+                            {(() => {
+                              const timeRemaining =
+                                dept.inProcess.processingTimeRemaining || 0;
+                              const totalTime =
+                                dept.inProcess.processingTime || 1;
+                              const progress = Math.max(
+                                0,
+                                Math.min(
+                                  100,
+                                  ((totalTime - timeRemaining) / totalTime) *
+                                    100
+                                )
+                              );
 
-                            return (
-                              <div className="mb-2">
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className={`h-2 rounded-full transition-all duration-1000 ${
-                                      progress >= 100
-                                        ? "bg-green-500"
-                                        : "bg-blue-500"
-                                    }`}
-                                    style={{ width: `${progress}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                          <div className="text-xs">
-                            <span className="text-blue-700">Priority: </span>
-                            <span
-                              className={`font-medium ${getPriorityTextColor(
-                                dept.inProcess.priority
-                              )}`}
-                            >
-                              {getPriorityLabel(dept.inProcess.priority)}
-                            </span>
-                          </div>
-                          {(() => {
-                            const timeRemaining =
-                              dept.inProcess.processingTimeRemaining || 0;
-                            const isComplete = timeRemaining <= 0;
-
-                            return (
-                              <div className="space-y-2">
-                                {/* Hold button allows pausing current work so another order can run */}
-                                {!isComplete && (
-                                  <button
-                                    onClick={() => handleHoldProcessing(dept.id)}
-                                    className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-800 hover:bg-gray-300`}
-                                  >
-                                    ⏸ Hold (pause)
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleCompleteProcessing(dept.id)}
-                                  disabled={!isComplete}
-                                  className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                    isComplete
-                                      ? "bg-green-600 text-white hover:bg-green-700 animate-pulse"
-                                      : "bg-gray-400 text-gray-600 cursor-not-allowed"
-                                  }`}
-                                >
-                                  {isComplete
-                                    ? "✅ Complete Processing"
-                                    : `⏳ Processing... (${formatTime(timeRemaining)})`}
-                                </button>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      );
-                    })()}
-
-                  {/* Queue Display */}
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-700 mb-2">
-                      Queue ({sortedQueue.length} orders)
-                    </div>
-                    {sortedQueue.length > 0 ? (
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {sortedQueue.map((order, index) => {
-                          const orderColor = getOrderColor(order.id);
-                          return (
-                            <div
-                              key={order.id}
-                              className="flex items-center justify-between p-2 rounded border border-gray-200 bg-white text-xs transition-all"
-                              style={{
-                                borderTopColor: orderColor.dot,
-                                borderTopWidth: "3px",
-                              }}
-                            >
-                              <div className="flex items-center space-x-2">
-                                <span className="w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                                  {index + 1}
-                                </span>
-                                <OrderColorDot orderId={order.id} size="xs" />
-                                <span className="font-medium">{order.id}</span>
-                              </div>
-                              <div className="text-right">
-                                <div
-                                  className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
-                                    order
-                                  )}`}
-                                >
-                                  {order.slaStatus === "on-track"
-                                    ? "OK"
-                                    : order.slaStatus === "at-risk"
-                                    ? "RISK"
-                                    : "LATE"}
-                                </div>
-                                <div
-                                  className={`text-xs font-medium mt-0.5 ${getPriorityTextColor(
-                                    order.priority
-                                  )}`}
-                                >
-                                  {getPriorityLabel(order.priority)}
-                                </div>
-                                {/* Resume button for held orders */}
-                                {order.status === "on-hold" && (
-                                  <div className="mt-2">
-                                    <button
-                                      onClick={() => handleResumeOrder(order.id)}
-                                      className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded"
-                                    >
-                                      Resume
-                                    </button>
+                              return (
+                                <div className="mb-2">
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div
+                                      className={`h-2 rounded-full transition-all duration-1000 ${
+                                        progress >= 100
+                                          ? "bg-green-500"
+                                          : "bg-blue-500"
+                                      }`}
+                                      style={{ width: `${progress}%` }}
+                                    ></div>
                                   </div>
-                                )}
-                              </div>
+                                </div>
+                              );
+                            })()}
+
+                            <div className="text-xs">
+                              <span className="text-blue-700">Priority: </span>
+                              <span
+                                className={`font-medium ${getPriorityTextColor(
+                                  dept.inProcess.priority
+                                )}`}
+                              >
+                                {getPriorityLabel(dept.inProcess.priority)}
+                              </span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-gray-500 text-center py-4 text-xs">
-                        No orders to process
-                      </div>
-                    )}
+                            {(() => {
+                              const timeRemaining =
+                                dept.inProcess.processingTimeRemaining || 0;
+                              const isComplete = timeRemaining <= 0;
 
-                    {/* Manual Mode: Start Processing Button */}
-                    {gameState.session.settings.manualMode &&
-                      !dept.inProcess &&
-                      sortedQueue.length > 0 && (
-                        <button
-                          onClick={() => handleStartProcessing(dept.id)}
-                          className="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-green-700 transition-colors"
-                        >
-                          Start Processing Order {sortedQueue[0].id}
-                        </button>
-                      )}
-                  </div>
-
-                  {/* Enhanced Drag-and-Drop Overlay */}
-                  {draggedOrder && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                      {draggedOrder.route.includes(dept.id) ? (
-                        <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg text-center animate-pulse">
-                          <div className="font-bold text-lg">✓ Drop Here</div>
-                          <div className="text-sm">
-                            Valid department for {draggedOrder.id}
+                              return (
+                                <div className="space-y-2">
+                                  {/* Hold button allows pausing current work so another order can run */}
+                                  {!isComplete && (
+                                    <button
+                                      onClick={() =>
+                                        handleHoldProcessing(dept.id)
+                                      }
+                                      className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-800 hover:bg-gray-300`}
+                                    >
+                                      ⏸ Hold (pause)
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() =>
+                                      handleCompleteProcessing(dept.id)
+                                    }
+                                    disabled={!isComplete}
+                                    className={`mt-2 w-full px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                      isComplete
+                                        ? "bg-green-600 text-white hover:bg-green-700 animate-pulse"
+                                        : "bg-gray-400 text-gray-600 cursor-not-allowed"
+                                    }`}
+                                  >
+                                    {isComplete
+                                      ? "✅ Complete Processing"
+                                      : `⏳ Processing... (${formatTime(
+                                          timeRemaining
+                                        )})`}
+                                  </button>
+                                </div>
+                              );
+                            })()}
                           </div>
+                        );
+                      })()}
+
+                    {/* Queue Display */}
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-700 mb-2">
+                        Queue ({sortedQueue.length} orders)
+                      </div>
+                      {sortedQueue.length > 0 ? (
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {sortedQueue.map((order, index) => {
+                            const orderColor = getOrderColor(order.id);
+                            return (
+                              <div
+                                key={order.id}
+                                className="flex items-center justify-between p-2 rounded border border-gray-200 bg-white text-xs transition-all"
+                                style={{
+                                  borderTopColor: orderColor.dot,
+                                  borderTopWidth: "3px",
+                                }}
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <span className="w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                    {index + 1}
+                                  </span>
+                                  <OrderColorDot orderId={order.id} size="xs" />
+                                  <span className="font-medium">
+                                    {order.id}
+                                  </span>
+                                </div>
+                                <div className="text-right">
+                                  <div
+                                    className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
+                                      order
+                                    )}`}
+                                  >
+                                    {order.slaStatus === "on-track"
+                                      ? "OK"
+                                      : order.slaStatus === "at-risk"
+                                      ? "RISK"
+                                      : "LATE"}
+                                  </div>
+                                  <div
+                                    className={`text-xs font-medium mt-0.5 ${getPriorityTextColor(
+                                      order.priority
+                                    )}`}
+                                  >
+                                    {getPriorityLabel(order.priority)}
+                                  </div>
+                                  {/* Resume button for held orders */}
+                                  {order.status === "on-hold" && (
+                                    <div className="mt-2">
+                                      <button
+                                        onClick={() =>
+                                          handleResumeOrder(order.id)
+                                        }
+                                        className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded"
+                                      >
+                                        Resume
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
-                        <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg text-center">
-                          <div className="font-bold text-lg">✗ Invalid</div>
-                          <div className="text-sm">
-                            {draggedOrder.id} cannot go here
-                          </div>
+                        <div className="text-gray-500 text-center py-4 text-xs">
+                          No orders to process
                         </div>
                       )}
+
+                      {/* Manual Mode: Start Processing Button */}
+                      {gameState.session.settings.manualMode &&
+                        !dept.inProcess &&
+                        sortedQueue.length > 0 && (
+                          <button
+                            onClick={() => handleStartProcessing(dept.id)}
+                            className="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-green-700 transition-colors"
+                          >
+                            Start Processing Order {sortedQueue[0].id}
+                          </button>
+                        )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+
+                    {/* Enhanced Drag-and-Drop Overlay */}
+                    {draggedOrder && (
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        {draggedOrder.route.includes(dept.id) ? (
+                          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg text-center animate-pulse">
+                            <div className="font-bold text-lg">✓ Drop Here</div>
+                            <div className="text-sm">
+                              Valid department for {draggedOrder.id}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg text-center">
+                            <div className="font-bold text-lg">✗ Invalid</div>
+                            <div className="text-sm">
+                              {draggedOrder.id} cannot go here
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>
@@ -1275,13 +1380,29 @@ export default function GameScreen() {
                 <label className="text-sm font-medium text-gray-600 block mb-1">
                   Due
                 </label>
-                <p className="text-lg">
-                  {selectedOrder.dueGameMinutes !== undefined
-                    ? `${selectedOrder.dueGameMinutes} min (game)`
-                    : selectedOrder.dueDate
-                    ? selectedOrder.dueDate.toLocaleString()
-                    : "—"}
-                </p>
+                {(() => {
+                  const currentElapsedMinutes = Math.floor(
+                    gameState.session.elapsedTime / 60000
+                  );
+                  const dueInfo = formatOrderDueTime(
+                    selectedOrder.dueGameMinutes,
+                    selectedOrder.priority,
+                    currentElapsedMinutes
+                  );
+                  return (
+                    <p
+                      className={`text-lg font-medium ${
+                        dueInfo.isOverdue
+                          ? "text-red-600"
+                          : dueInfo.timeRemaining < 2
+                          ? "text-orange-600"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {dueInfo.display}
+                    </p>
+                  );
+                })()}
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600 block mb-1">

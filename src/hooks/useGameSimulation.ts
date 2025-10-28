@@ -70,9 +70,13 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     if (rng.next() < generationChance) {
       // Determine if this order should include Engineering (25% chance)
       const includeEngineering = rng.next() < 0.25;
-      
+
       // Generate route - always use generateRandomRoute to ensure Engineering-first rule
-      const route = generateRandomRoute(rng, complexityLevel, includeEngineering);
+      const route = generateRandomRoute(
+        rng,
+        complexityLevel,
+        includeEngineering
+      );
 
       const orderId = `ORD-${String(
         gameState.totalOrdersGenerated + 1
@@ -128,11 +132,24 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         orderValue * (isHalfOrder ? 0.6 : 1.0)
       );
 
-      // Determine in-game due time (minutes) relative to session start
-      const extraDue = Math.max(1, Math.floor(rng.between(15, 45)));
+      // Determine in-game due time (minutes) based on priority level
+      // Priority-based due times: Lower priority = more time to complete
+      const priorityDueTimes = {
+        urgent: 4,   // 4 minutes from when order appears
+        high: 6,     // 6 minutes from when order appears  
+        normal: 8,   // 8 minutes from when order appears
+        low: 10,     // 10 minutes from when order appears
+      };
+      
+      const extraDue = priorityDueTimes[priority];
       const capMinutes = gameState.session.settings.sessionDuration || 30;
-      const currentElapsedMinutes = Math.floor(gameState.session.elapsedTime / 60000);
-      const dueGameMinutes = Math.min(capMinutes, currentElapsedMinutes + extraDue);
+      const currentElapsedMinutes = Math.floor(
+        gameState.session.elapsedTime / 60000
+      );
+      const dueGameMinutes = Math.min(
+        capMinutes,
+        currentElapsedMinutes + extraDue
+      );
 
       newOrders.push({
         id: orderId,
@@ -700,7 +717,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         | "order-resume",
       description: string,
       orderId?: string,
-      previousState?: Partial<GameState>
+      previousState?: Partial<GameState>,
+      newState?: Partial<GameState>
     ) => {
       const decision: Decision = {
         id: `decision-${Date.now()}-${Math.random()}`,
@@ -709,6 +727,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         description,
         orderId,
         previousState,
+        newState,
         canUndo: true,
       };
 
@@ -793,6 +812,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const optimizeOrderRoute = useCallback(
     (orderId: string, newRoute: number[]) => {
       const previousState = { ...gameState };
+      let newState: GameState;
 
       setGameState((prev) => {
         const pendingIndex = prev.pendingOrders.findIndex(
@@ -804,10 +824,11 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
             ...updatedPendingOrders[pendingIndex],
             route: newRoute,
           };
-          return {
+          newState = {
             ...prev,
             pendingOrders: updatedPendingOrders,
           };
+          return newState;
         }
 
         // Check if order is already in processing
@@ -835,10 +856,11 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           return dept;
         });
 
-        return {
+        newState = {
           ...prev,
           departments: updatedDepartments,
         };
+        return newState;
       });
 
       // Record the optimization decision
@@ -846,7 +868,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         "order-release",
         `Optimized route for order ${orderId}: ${newRoute.join(" → ")}`,
         orderId,
-        previousState
+        previousState,
+        newState!
       );
     },
     [gameState, recordDecision]
@@ -856,6 +879,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const scheduleOrder = useCallback(
     (orderId: string, departmentId: number, scheduledTime: Date) => {
       const previousState = { ...gameState };
+      let newState: GameState;
 
       setGameState((prev) => {
         // Find the order in pending orders
@@ -888,18 +912,20 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           return dept;
         });
 
-        return {
+        newState = {
           ...prev,
           pendingOrders: updatedPendingOrders,
           departments: updatedDepartments,
         };
+        return newState;
       });
 
       recordDecision(
         "order-release",
         `Scheduled order ${orderId} to Department ${departmentId} at ${scheduledTime.toLocaleTimeString()}`,
         orderId,
-        previousState
+        previousState,
+        newState!
       );
     },
     [gameState, recordDecision]
@@ -909,6 +935,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const rebalanceWorkload = useCallback(
     (sourceIds: number[], targetIds: number[], ordersToMove: string[]) => {
       const previousState = { ...gameState };
+      let newState: GameState;
 
       setGameState((prev) => {
         const updatedDepartments = prev.departments.map((dept) => {
@@ -948,10 +975,11 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           return dept;
         });
 
-        return {
+        newState = {
           ...prev,
           departments: finalDepartments,
         };
+        return newState;
       });
 
       recordDecision(
@@ -962,7 +990,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           ", "
         )}] to [${targetIds.join(", ")}]`,
         undefined,
-        previousState
+        previousState,
+        newState!
       );
     },
     [gameState, recordDecision]
@@ -972,6 +1001,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const completeProcessing = useCallback(
     (departmentId: number) => {
       const previousState = { ...gameState };
+      let newState: GameState;
 
       setGameState((prev) => {
         const department = prev.departments.find((d) => d.id === departmentId);
@@ -1043,19 +1073,21 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           updatedPendingOrders.push(updatedOrder);
         }
 
-        return {
+        newState = {
           ...prev,
           departments: updatedDepartments,
           pendingOrders: updatedPendingOrders,
           completedOrders: updatedCompletedOrders,
         };
+        return newState;
       });
 
       recordDecision(
         "order-release",
         `Manually completed processing of order in Department ${departmentId}`,
         undefined,
-        previousState
+        previousState,
+        newState!
       );
     },
     [gameState, recordDecision]
@@ -1065,6 +1097,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const holdProcessing = useCallback(
     (departmentId: number) => {
       const previousState = { ...gameState };
+      let newState: GameState;
 
       setGameState((prev) => {
         const dept = prev.departments.find((d) => d.id === departmentId);
@@ -1095,17 +1128,19 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           return d;
         });
 
-        return {
+        newState = {
           ...prev,
           departments: updatedDepartments,
         };
+        return newState;
       });
 
       recordDecision(
         "order-hold",
         `Held (paused) processing in Department ${departmentId}`,
         undefined,
-        previousState
+        previousState,
+        newState!
       );
     },
     [gameState, recordDecision]
@@ -1115,6 +1150,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const resumeProcessing = useCallback(
     (orderId: string) => {
       const previousState = { ...gameState };
+      let newState: GameState;
 
       setGameState((prev) => {
         const updatedDepartments = prev.departments.map((d) => {
@@ -1122,29 +1158,31 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           if (idx !== -1) {
             const order = d.queue[idx];
             // Remove it from its position and place at front
-            const newQueue = [...d.queue.slice(0, idx), ...d.queue.slice(idx + 1)];
+            const newQueue = [
+              ...d.queue.slice(0, idx),
+              ...d.queue.slice(idx + 1),
+            ];
             return {
               ...d,
-              queue: [
-                { ...order, status: "queued" as const },
-                ...newQueue,
-              ],
+              queue: [{ ...order, status: "queued" as const }, ...newQueue],
             };
           }
           return d;
         });
 
-        return {
+        newState = {
           ...prev,
           departments: updatedDepartments,
         };
+        return newState;
       });
 
       recordDecision(
         "order-resume",
         `Resumed held order ${orderId}`,
         undefined,
-        previousState
+        previousState,
+        newState!
       );
     },
     [gameState, recordDecision]
@@ -1154,6 +1192,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const startProcessing = useCallback(
     (departmentId: number) => {
       const previousState = { ...gameState };
+      let newState: GameState;
 
       setGameState((prev) => {
         const department = prev.departments.find((d) => d.id === departmentId);
@@ -1207,17 +1246,19 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           return dept;
         });
 
-        return {
+        newState = {
           ...prev,
           departments: updatedDepartments,
         };
+        return newState;
       });
 
       recordDecision(
         "order-release",
         `Manually started processing order in Department ${departmentId}`,
         undefined,
-        previousState
+        previousState,
+        newState!
       );
     },
     [gameState, recordDecision, calculateProcessingTime]
