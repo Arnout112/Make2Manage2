@@ -10,8 +10,6 @@ import type { Order } from "../types";
 import {
   RandomEventsDisplay,
   UndoRedoControls,
-  RouteOptimizer,
-  CapacityPlanner,
   RouteProgressIndicator,
   OrderColorDot,
 } from "../components";
@@ -74,8 +72,8 @@ export default function GameScreen() {
     // Hold: pause current processing so a higher-priority order can be processed
     // Resume: move a held order back to the front of the queue (teacher/student resumes it)
     // (Both functions come from the simulation hook)
-    holdProcessing = sharedState.holdProcessing;
-    resumeProcessing = sharedState.resumeProcessing;
+  holdProcessing = sharedState.holdProcessing;
+  resumeProcessing = sharedState.resumeProcessing;
   } catch (error) {
     return (
       <div className="flex-1 p-8 bg-red-50">
@@ -393,6 +391,7 @@ export default function GameScreen() {
               <div className="flex items-center space-x-4">
                 <Package className="w-8 h-8 text-green-600" />
                 <ShoppingCart className="w-8 h-8 text-blue-600" />
+                {/* Simulation speed control moved to the header (next to Pause) */}
               </div>
             </div>
 
@@ -1311,43 +1310,7 @@ export default function GameScreen() {
         />
       </div>
 
-      {/* Route Optimizer - Only show if advanced routing is enabled */}
-      {gameState.session.settings.enableAdvancedRouting && (
-        <div className="mb-8">
-          <RouteOptimizer
-            orders={[
-              ...gameState.pendingOrders,
-              ...gameState.departments.flatMap((d) => [
-                ...d.queue,
-                ...(d.inProcess ? [d.inProcess] : []),
-              ]),
-            ]}
-            departments={gameState.departments}
-            onSelectAlternativeRoute={(orderId, routeIndex) => {
-              console.log(
-                "Selecting alternative route for order:",
-                orderId,
-                "route index:",
-                routeIndex
-              );
-            }}
-          />
-        </div>
-      )}
-
-      {/* Capacity Planner */}
-      <div className="mb-8">
-        <CapacityPlanner
-          gameState={gameState}
-          onRebalanceWorkload={(plan) => {
-            rebalanceWorkload(
-              plan.sourceIds,
-              plan.targetIds,
-              plan.ordersToMove
-            );
-          }}
-        />
-      </div>
+      {/* Capacity Summary removed per request */}
 
       {/* Order Detail Drawer */}
       {detailDrawerOpen && selectedOrder && (

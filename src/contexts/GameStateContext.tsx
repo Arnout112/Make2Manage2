@@ -7,6 +7,8 @@ interface GameStateContextType {
   gameState: GameState;
   currentDecisionIndex: number;
   isRunning: boolean;
+  simulationSpeed: number;
+  setSimulationSpeed: (s: number) => void;
   startGame: () => void;
   pauseGame: () => void;
   resetGame: () => void;
@@ -48,6 +50,8 @@ export function GameStateProvider({
       gameState: gameSimulation.gameState,
       currentDecisionIndex: gameSimulation.currentDecisionIndex,
       isRunning: gameSimulation.isRunning,
+      simulationSpeed: gameSimulation.simulationSpeed,
+      setSimulationSpeed: gameSimulation.setSimulationSpeed,
       startGame: gameSimulation.startGame,
       pauseGame: gameSimulation.pauseGame,
       resetGame: gameSimulation.resetGame,

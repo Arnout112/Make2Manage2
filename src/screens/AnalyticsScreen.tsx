@@ -1,20 +1,8 @@
-import { useState } from "react";
-import {
-  BarChart3,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  Factory,
-  AlertTriangle,
-} from "lucide-react";
-import { PerformanceDashboard } from "../components";
+import { Clock, CheckCircle, Factory, AlertTriangle } from "lucide-react";
 import { useSharedGameState } from "../contexts/GameStateContext";
-import type { StatisticsFilter } from "../types";
+import { PerformanceDashboard } from "../components";
 
 export default function AnalyticsScreen() {
-  const [statisticsFilter, setStatisticsFilter] =
-    useState<StatisticsFilter>("order-doorlooptijd");
-
   // Use shared game state for performance data with error handling
   let gameState;
   try {
@@ -25,20 +13,7 @@ export default function AnalyticsScreen() {
     gameState = null;
   }
 
-  const filterOptions = [
-    {
-      id: "order-doorlooptijd" as StatisticsFilter,
-      label: "Order doorlooptijd",
-    },
-    {
-      id: "doorlooptijd-per-werkplek" as StatisticsFilter,
-      label: "Doorlooptijd per werkplek",
-    },
-    {
-      id: "orderdoorlooptijd-per-afdeling" as StatisticsFilter,
-      label: "Orderdoorlooptijd per afdeling",
-    },
-  ];
+  // Filter options removed (non-functional)
 
   const kpiCards = [
     {
@@ -77,27 +52,7 @@ export default function AnalyticsScreen() {
 
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-gray-50">
-      {/* Doorlooptijd Header */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Doorlooptijd
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          {filterOptions.map((filter) => (
-            <button
-              key={filter.id}
-              onClick={() => setStatisticsFilter(filter.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                statisticsFilter === filter.id
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Top filter options removed per request */}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-6 mb-8">
@@ -149,49 +104,7 @@ export default function AnalyticsScreen() {
 
       {/* Analytics Panels */}
       <div className="space-y-8">
-        {/* Process Analysis Panel */}
-        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 mb-6">
-            Process Analysis
-          </h3>
-          <div className="h-80 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-            <div className="text-center text-gray-500">
-              <BarChart3 size={64} className="mx-auto mb-4 text-gray-400" />
-              <h4 className="text-lg font-medium mb-2">Lead Time Analysis</h4>
-              <p className="text-sm mb-4">
-                Visualization for: {statisticsFilter}
-              </p>
-              <div className="text-xs space-y-1 max-w-md">
-                <p>• Order-level lead time distribution with histogram</p>
-                <p>• Department cycle time analysis and comparison</p>
-                <p>• Bottleneck identification through utilization metrics</p>
-                <p>
-                  • Little's Law visualization (WIP vs Throughput vs Lead Time)
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Performance Metrics Panel */}
-        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 mb-6">
-            Performance Metrics
-          </h3>
-          <div className="h-80 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-            <div className="text-center text-gray-500">
-              <TrendingUp size={64} className="mx-auto mb-4 text-gray-400" />
-              <h4 className="text-lg font-medium mb-2">Flow KPIs</h4>
-              <p className="text-sm mb-4">Throughput and utilization trends</p>
-              <div className="text-xs space-y-1 max-w-md">
-                <p>• WIP levels over time with trend analysis</p>
-                <p>• Department utilization rates and capacity planning</p>
-                <p>• On-time delivery performance vs SLA targets</p>
-                <p>• Queue length analysis and wait time optimization</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Process Analysis and Performance Metrics panels removed per request */}
 
         {/* Detailed Data Tables */}
         <div className="grid grid-cols-2 gap-8">
@@ -292,51 +205,7 @@ export default function AnalyticsScreen() {
           </div>
         </div>
 
-        {/* Filter Controls */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">
-            Analysis Filters
-          </h4>
-          <div className="grid grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Time Window
-              </label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="5min">Last 5 minutes</option>
-                <option value="15min">Last 15 minutes</option>
-                <option value="30min">Last 30 minutes</option>
-                <option value="1hour">Last hour</option>
-                <option value="full">Full run</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Order Status
-              </label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="all">All orders</option>
-                <option value="completed">Completed only</option>
-                <option value="error">Errors only</option>
-                <option value="active">Active only</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Department
-              </label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="all">All departments</option>
-                <option value="1">Department 1</option>
-                <option value="2">Department 2</option>
-                <option value="3">Department 3</option>
-                <option value="4">Department 4</option>
-              </select>
-            </div>
-          </div>
-        </div>
+        {/* Analysis filter controls removed per request */}
       </div>
 
       {/* Performance Dashboard */}

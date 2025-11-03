@@ -23,7 +23,14 @@ function GameControlsHeaderWrapper({
   difficulty: "easy" | "medium" | "hard";
   onDifficultyChange: (difficulty: "easy" | "medium" | "hard") => void;
 }) {
-  const { gameState, startGame, pauseGame, resetGame } = useSharedGameState();
+  const {
+    gameState,
+    startGame,
+    pauseGame,
+    resetGame,
+    simulationSpeed,
+    setSimulationSpeed,
+  } = useSharedGameState();
 
   return (
     <GameControlsHeader
@@ -34,6 +41,8 @@ function GameControlsHeaderWrapper({
       onReset={resetGame}
       difficulty={difficulty}
       onDifficultyChange={onDifficultyChange}
+      simulationSpeed={simulationSpeed}
+      setSimulationSpeed={setSimulationSpeed}
     />
   );
 }

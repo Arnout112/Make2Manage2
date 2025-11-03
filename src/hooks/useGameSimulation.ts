@@ -18,6 +18,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     initializeGameState(initialSettings)
   );
   const [isRunning, setIsRunning] = useState(false);
+  // Simulation speed multiplier (1 = real-time, 2 = 2x, etc.)
+  const [simulationSpeed, setSimulationSpeed] = useState<number>(1);
   const [currentDecisionIndex, setCurrentDecisionIndex] = useState(-1); // R13: Track decision position
   const intervalRef = useRef<number | null>(null);
   const lastUpdateTime = useRef<number>(Date.now());
@@ -48,7 +50,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   );
 
   // Generate new orders based on time and settings
-  const generateNewOrders = useCallback((): Order[] => {
+  // elapsedMs: logical game-time elapsed since last tick (already scaled by simulationSpeed)
+  const generateNewOrders = useCallback((elapsedMs: number): Order[] => {
     const rng = rngRef.current;
     const { orderGenerationRate, complexityLevel } = gameState.session.settings;
 
@@ -66,8 +69,10 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         break;
     }
 
-    const newOrders: Order[] = [];
-    if (rng.next() < generationChance) {
+  const newOrders: Order[] = [];
+  // Treat generationChance as per-second probability; scale by elapsedMs
+  const perTickChance = Math.min(1, generationChance * (elapsedMs / 1000));
+  if (rng.next() < perTickChance) {
       // Determine if this order should include Engineering (25% chance)
       const includeEngineering = rng.next() < 0.25;
 
@@ -184,12 +189,13 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   // Update SLA status for orders
   const updateSLAStatus = useCallback(
     (order: Order): Order => {
-      const now = Date.now();
-      // Compute absolute due time: prefer dueGameMinutes (relative to session start) else fallback to legacy dueDate
+      // Use game-time aware 'now' so SLA reacts to simulationSpeed
       const sessionStart = gameState.sessionLog?.startTime
         ? gameState.sessionLog.startTime.getTime()
         : Date.now();
+      const now = sessionStart + gameState.session.elapsedTime;
 
+      // Compute absolute due time: prefer dueGameMinutes (relative to session start) else fallback to legacy dueDate
       const dueAbsoluteMs =
         order.dueGameMinutes !== undefined
           ? sessionStart + order.dueGameMinutes * 60 * 1000
@@ -218,14 +224,15 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
 
   // R07: Generate random events (equipment failures, rush orders, etc.)
   const generateRandomEvents = useCallback(
-    (departments: Department[]): GameEvent[] => {
+    (departments: Department[], elapsedMs: number): GameEvent[] => {
       if (!gameState.session.settings.enableEvents) return [];
 
       const events: GameEvent[] = [];
       const rng = rngRef.current;
 
-      // Equipment failure event (0.1% chance per second)
-      if (rng.next() < 0.001) {
+  // Equipment failure event (0.1% chance per second)
+  const equipmentFailurePerSec = 0.001;
+  if (rng.next() < Math.min(1, equipmentFailurePerSec * (elapsedMs / 1000))) {
         const affectedDept = rng.choice(
           departments.filter((d) => d.status !== "maintenance")
         );
@@ -242,7 +249,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
       }
 
       // Rush order event (0.05% chance per second)
-      if (rng.next() < 0.0005) {
+      const rushOrderPerSec = 0.0005;
+      if (rng.next() < Math.min(1, rushOrderPerSec * (elapsedMs / 1000))) {
         events.push({
           id: `event-${Date.now()}-${Math.random()}`,
           type: "rush-order",
@@ -253,7 +261,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
       }
 
       // Delivery delay event (0.02% chance per second)
-      if (rng.next() < 0.0002) {
+      const deliveryDelayPerSec = 0.0002;
+      if (rng.next() < Math.min(1, deliveryDelayPerSec * (elapsedMs / 1000))) {
         events.push({
           id: `event-${Date.now()}-${Math.random()}`,
           type: "delivery-delay",
@@ -264,7 +273,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
       }
 
       // Efficiency boost event (0.03% chance per second)
-      if (rng.next() < 0.0003) {
+      const efficiencyBoostPerSec = 0.0003;
+      if (rng.next() < Math.min(1, efficiencyBoostPerSec * (elapsedMs / 1000))) {
         const boostedDept = rng.choice(departments);
         events.push({
           id: `event-${Date.now()}-${Math.random()}`,
@@ -284,7 +294,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   // Manual mode department updates - only update timers and status, no auto-processing
   const processManualDepartmentUpdates = useCallback(
     (
-      departments: Department[]
+      departments: Department[],
+      elapsedMs: number
     ): {
       updatedDepartments: Department[];
       completedOrders: Order[];
@@ -301,8 +312,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           const order = updatedDept.inProcess;
           const timeRemaining = Math.max(
             0,
-            (order.processingTimeRemaining || 0) - 1000
-          ); // Subtract 1 second
+            (order.processingTimeRemaining || 0) - elapsedMs
+          );
 
           updatedDept.inProcess = {
             ...order,
@@ -346,7 +357,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   // Process department operations
   const processDepartmentUpdates = useCallback(
     (
-      departments: Department[]
+      departments: Department[],
+      elapsedMs: number
     ): {
       updatedDepartments: Department[];
       completedOrders: Order[];
@@ -362,7 +374,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         // Process currently active order
         if (updatedDept.inProcess) {
           const order = updatedDept.inProcess;
-          const timeRemaining = (order.processingTimeRemaining || 0) - 1000; // Subtract 1 second
+          const timeRemaining = (order.processingTimeRemaining || 0) - elapsedMs;
 
           if (timeRemaining <= 0) {
             // Current operation completed
@@ -548,6 +560,9 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     const now = Date.now();
     const deltaTime = now - lastUpdateTime.current;
     lastUpdateTime.current = now;
+    // Scale logical time by simulationSpeed so everything (elapsed time, processing, generation)
+    // advances by simulationSpeed times real time.
+    const effectiveDelta = Math.floor(deltaTime * simulationSpeed);
 
     setGameState((prevState) => {
       // Check if game should end
@@ -562,8 +577,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         };
       }
 
-      // Update elapsed time
-      const newElapsedTime = prevState.session.elapsedTime + deltaTime;
+  // Update elapsed time (game-time scaled)
+  const newElapsedTime = prevState.session.elapsedTime + effectiveDelta;
 
       // Release scheduled orders to pendingOrders when their time arrives
       // (but don't auto-start them - students must drag them to departments)
@@ -592,8 +607,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         }
       );
 
-      // Generate new orders (always enabled for educational scenarios)
-      const newOrders = generateNewOrders();
+  // Generate new orders (always enabled for educational scenarios)
+  const newOrders = generateNewOrders(effectiveDelta);
 
       // Update SLA status for all pending orders (always enabled for time pressure)
       const updatedPendingOrders = [
@@ -604,11 +619,11 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
       // Process department updates - only automatic processing if NOT in manual mode
       const { updatedDepartments, completedOrders, events } = prevState.session
         .settings.manualMode
-        ? processManualDepartmentUpdates(prevState.departments) // Manual mode: only timers and visual feedback
-        : processDepartmentUpdates(prevState.departments); // Automatic mode: normal processing
+        ? processManualDepartmentUpdates(prevState.departments, effectiveDelta) // Manual mode: only timers and visual feedback
+        : processDepartmentUpdates(prevState.departments, effectiveDelta); // Automatic mode: normal processing
 
       // R07: Generate random events
-      const randomEvents = generateRandomEvents(updatedDepartments);
+  const randomEvents = generateRandomEvents(updatedDepartments, effectiveDelta);
       const allEvents = [...events, ...randomEvents, ...orderReleaseEvents];
 
       // Update performance metrics
@@ -671,6 +686,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     processDepartmentUpdates,
     processManualDepartmentUpdates,
     generateRandomEvents,
+    simulationSpeed,
   ]);
 
   // Start simulation
@@ -751,7 +767,9 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   // Effect to handle simulation loop
   useEffect(() => {
     if (isRunning && gameState.session.status === "running") {
-      intervalRef.current = setInterval(simulationStep, 1000); // Update every second
+      // interval depends on simulationSpeed (faster speeds reduce interval)
+      const intervalMs = Math.max(50, Math.floor(1000 / Math.max(1, simulationSpeed)));
+      intervalRef.current = setInterval(simulationStep, intervalMs);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -764,7 +782,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, gameState.session.status, simulationStep]);
+  }, [isRunning, gameState.session.status, simulationStep, simulationSpeed]);
 
   // Auto-pause when game completes
   useEffect(() => {
@@ -1281,5 +1299,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     startProcessing,
     holdProcessing,
     resumeProcessing,
+    // Simulation speed control (1 = real-time, 2 = 2x, ...)
+    simulationSpeed,
+    setSimulationSpeed,
   };
 };

@@ -10,6 +10,8 @@ interface GameControlsHeaderProps {
   onReset: () => void;
   difficulty?: "easy" | "medium" | "hard";
   onDifficultyChange?: (difficulty: "easy" | "medium" | "hard") => void;
+  simulationSpeed?: number;
+  setSimulationSpeed?: (s: number) => void;
 }
 
 const formatTime = (milliseconds: number): string => {
@@ -27,6 +29,8 @@ export default function GameControlsHeader({
   onReset,
   difficulty = "easy",
   onDifficultyChange,
+  simulationSpeed = 1,
+  setSimulationSpeed,
 }: GameControlsHeaderProps) {
   return (
     <div className="w-full space-y-2">
@@ -85,6 +89,26 @@ export default function GameControlsHeader({
             >
               <Pause size={16} />
               <span>Pause</span>
+            </button>
+          )}
+
+          {/* Simulation speed control next to Pause/Resume */}
+          {setSimulationSpeed && (
+            <button
+              onClick={() => {
+                try {
+                  const speeds = [1, 2, 4];
+                  const idx = speeds.indexOf(simulationSpeed || 1);
+                  const next = speeds[(idx + 1) % speeds.length];
+                  setSimulationSpeed(next);
+                } catch (e) {
+                  console.error("Failed to change simulation speed", e);
+                }
+              }}
+              className="flex items-center space-x-2 bg-gray-50 text-gray-800 px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-100 text-sm"
+              title="Cycle simulation speed (1x → 2x → 4x)"
+            >
+              <span className="font-medium">x{simulationSpeed || 1}</span>
             </button>
           )}
 
