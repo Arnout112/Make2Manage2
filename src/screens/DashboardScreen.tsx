@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lightbulb, X } from "lucide-react";
 import Sidebar from "../components/layouts/Sidebar";
 import Header from "../components/layouts/Header";
@@ -13,7 +13,30 @@ import { applyDifficultyPreset } from "../utils/gameInitialization";
 import LandingScreen from "./LandingScreen";
 import AnalyticsScreen from "./AnalyticsScreen";
 import GameScreen from "./GameScreen";
+import EndGameScreen from "./EndGameScreen";
 import type { ScreenType, NavigationScreen, GameSettings } from "../types";
+
+// Component to monitor game completion and handle automatic navigation
+function GameStateMonitor({
+  activeScreen,
+  setActiveScreen,
+  children,
+}: {
+  activeScreen: ScreenType;
+  setActiveScreen: (screen: ScreenType) => void;
+  children: React.ReactNode;
+}) {
+  const { gameState } = useSharedGameState();
+
+  // Auto-navigate to end game screen when game completes
+  useEffect(() => {
+    if (gameState.session.status === "completed" && activeScreen !== "end-game") {
+      setActiveScreen("end-game");
+    }
+  }, [gameState.session.status, activeScreen, setActiveScreen]);
+
+  return <>{children}</>;
+}
 
 // Component to provide game controls using shared state
 function GameControlsHeaderWrapper({
@@ -115,6 +138,11 @@ export default function DashboardScreen() {
           title: "Statistics",
           subtitle: "Performance Analysis & Metrics",
         };
+      case "end-game":
+        return {
+          title: "Game Complete",
+          subtitle: "Final Results & Performance Summary",
+        };
       default:
         return { title: "Make2Manage", subtitle: "Digital Learning Game" };
     }
@@ -128,6 +156,8 @@ export default function DashboardScreen() {
         return <GameScreen />;
       case "analytics":
         return <AnalyticsScreen />;
+      case "end-game":
+        return <EndGameScreen />;
       default:
         return <LandingScreen onNavigate={handleLandingNavigate} />;
     }
@@ -147,6 +177,10 @@ export default function DashboardScreen() {
         renderActiveScreen()
       ) : (
         <GameStateProvider gameSettings={sharedGameSettings}>
+          <GameStateMonitor 
+            activeScreen={activeScreen}
+            setActiveScreen={setActiveScreen}
+          >
           {/* Left Navigation Sidebar */}
           <Sidebar
             activeScreen={activeScreen}
@@ -182,6 +216,7 @@ export default function DashboardScreen() {
             {/* Screen Content */}
             {renderActiveScreen()}
           </div>
+          </GameStateMonitor>
         </GameStateProvider>
       )}
       {/* Help Sidebar - Only show on game screen */}

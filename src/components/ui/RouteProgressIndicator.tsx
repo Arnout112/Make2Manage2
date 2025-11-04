@@ -12,10 +12,11 @@ interface RouteProgressIndicatorProps {
 const RouteProgressIndicator: React.FC<RouteProgressIndicatorProps> = ({
   order,
   departmentNames = {
-    1: "Assembly",
-    2: "Packaging",
-    3: "Quality Control",
-    4: "Machining",
+    1: "Welding",
+    2: "Machining", 
+    3: "Painting",
+    4: "Assembly",
+    5: "Engineering",
   },
   size = "sm",
   showLabels = false,

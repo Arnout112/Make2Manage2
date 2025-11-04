@@ -106,8 +106,8 @@ export type StatisticsFilter =
   | "order-doorlooptijd"
   | "doorlooptijd-per-werkplek"
   | "orderdoorlooptijd-per-afdeling";
-export type ScreenType = "landing" | "game" | "analytics" | "manual-game";
-export type NavigationScreen = "game" | "analytics" | "manual-game";
+export type ScreenType = "landing" | "game" | "analytics" | "manual-game" | "end-game";
+export type NavigationScreen = "game" | "analytics" | "manual-game" | "end-game";
 
 // Game Session Management
 export interface GameSession {

@@ -429,14 +429,39 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
               // Move to next department or complete order
               const nextStepIndex = completedOrder.currentStepIndex + 1;
               if (nextStepIndex >= completedOrder.route.length) {
-                // Order fully completed
+                // Order fully completed - ensure all timestamps are present
+                const now = new Date();
+                
+                // Create missing timestamps for any departments not yet timestamped
+                const timestampedDeptIds = new Set(completedOrder.timestamps.map(t => t.deptId));
+                completedOrder.route.forEach(deptId => {
+                  if (!timestampedDeptIds.has(deptId)) {
+                    // Add missing timestamp with both start and end
+                    completedOrder.timestamps.push({
+                      deptId,
+                      start: new Date(now.getTime() - 5 * 60 * 1000), // 5 minutes ago
+                      end: now
+                    });
+                  }
+                });
+                
+                // Ensure all timestamps have end times
+                completedOrder.timestamps.forEach(timestamp => {
+                  if (!timestamp.end) {
+                    timestamp.end = now;
+                  }
+                });
+                
+                // Update SLA status one final time before completion to ensure accuracy
+                // Note: The order already has updated SLA status from the department processing above
+                
                 completedOrder.status =
                   completedOrder.slaStatus === "overdue"
                     ? "completed-late"
                     : "completed-on-time";
-                completedOrder.completedAt = new Date();
+                completedOrder.completedAt = now;
                 completedOrder.actualLeadTime = Math.floor(
-                  (Date.now() - completedOrder.createdAt.getTime()) /
+                  (now.getTime() - completedOrder.createdAt.getTime()) /
                     (60 * 1000)
                 );
                 completedOrders.push(completedOrder);
@@ -610,17 +635,24 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   // Generate new orders (always enabled for educational scenarios)
   const newOrders = generateNewOrders(effectiveDelta);
 
-      // Update SLA status for all pending orders (always enabled for time pressure)
+      // Update SLA status for all orders in the system (pending, queued, and processing)
       const updatedPendingOrders = [
         ...prevState.pendingOrders,
         ...releasedOrders,
       ].map(updateSLAStatus);
 
+      // Also update SLA status for orders in department queues and processing
+      const updatedDepartments = prevState.departments.map(dept => ({
+        ...dept,
+        queue: dept.queue.map(updateSLAStatus),
+        inProcess: dept.inProcess ? updateSLAStatus(dept.inProcess) : undefined,
+      }));
+
       // Process department updates - only automatic processing if NOT in manual mode
-      const { updatedDepartments, completedOrders, events } = prevState.session
+      const { updatedDepartments: finalDepartments, completedOrders, events } = prevState.session
         .settings.manualMode
-        ? processManualDepartmentUpdates(prevState.departments, effectiveDelta) // Manual mode: only timers and visual feedback
-        : processDepartmentUpdates(prevState.departments, effectiveDelta); // Automatic mode: normal processing
+        ? processManualDepartmentUpdates(updatedDepartments, effectiveDelta) // Manual mode: only timers and visual feedback
+        : processDepartmentUpdates(updatedDepartments, effectiveDelta); // Automatic mode: normal processing
 
       // R07: Generate random events
   const randomEvents = generateRandomEvents(updatedDepartments, effectiveDelta);
@@ -644,15 +676,15 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
             ) / totalCompleted
           : 0;
 
-      const utilizationRates = updatedDepartments.reduce((acc, dept) => {
+      const utilizationRates = finalDepartments.reduce((acc, dept) => {
         acc[dept.id] = dept.utilization;
         return acc;
       }, {} as { [key: number]: number });
 
-      const bottleneckDepartment = updatedDepartments.reduce(
+      const bottleneckDepartment = finalDepartments.reduce(
         (max, dept) =>
           dept.utilization >
-          (updatedDepartments.find((d) => d.id === max)?.utilization || 0)
+          (finalDepartments.find((d) => d.id === max)?.utilization || 0)
             ? dept.id
             : max,
         1
@@ -664,7 +696,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           ...prevState.session,
           elapsedTime: newElapsedTime,
         },
-        departments: updatedDepartments,
+        departments: finalDepartments,
         pendingOrders: [...updatedPendingOrders, ...newOrders],
         // Scheduled orders are moved to pendingOrders when their releaseTime arrives
         scheduledOrders: remainingScheduledOrders,
@@ -1070,16 +1102,41 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         };
 
         if (isLastStep) {
-          // Order is fully completed
-          completedOrder.status =
-            completedOrder.slaStatus === "overdue"
+          // Order is fully completed - ensure all timestamps are present
+          const now = new Date();
+          
+          // Create missing timestamps for any departments not yet timestamped
+          const timestampedDeptIds = new Set(completedOrder.timestamps.map(t => t.deptId));
+          completedOrder.route.forEach(deptId => {
+            if (!timestampedDeptIds.has(deptId)) {
+              // Add missing timestamp with both start and end
+              completedOrder.timestamps.push({
+                deptId,
+                start: new Date(now.getTime() - 5 * 60 * 1000), // 5 minutes ago
+                end: now
+              });
+            }
+          });
+          
+          // Ensure all timestamps have end times
+          completedOrder.timestamps.forEach(timestamp => {
+            if (!timestamp.end) {
+              timestamp.end = now;
+            }
+          });
+          
+          // Update SLA status one final time before completion to ensure accuracy
+          const finalCompletedOrder = updateSLAStatus(completedOrder);
+          
+          finalCompletedOrder.status =
+            finalCompletedOrder.slaStatus === "overdue"
               ? "completed-late"
               : "completed-on-time";
-          completedOrder.completedAt = new Date();
-          completedOrder.actualLeadTime = Math.floor(
-            (Date.now() - completedOrder.createdAt.getTime()) / (60 * 1000)
+          finalCompletedOrder.completedAt = now;
+          finalCompletedOrder.actualLeadTime = Math.floor(
+            (now.getTime() - finalCompletedOrder.createdAt.getTime()) / (60 * 1000)
           );
-          updatedCompletedOrders.push(completedOrder);
+          updatedCompletedOrders.push(finalCompletedOrder);
         } else {
           // Move to next department - return to pending for manual assignment
           const updatedOrder = {
