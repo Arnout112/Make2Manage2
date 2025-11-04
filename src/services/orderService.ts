@@ -115,8 +115,12 @@ export class OrderService {
       if (priorityDiff !== 0) return priorityDiff;
 
       // 3. Sort by due date (earliest first)
-      const dueDateA = new Date(a.dueDate).getTime();
-      const dueDateB = new Date(b.dueDate).getTime();
+      const dueDateA = a.dueDate
+        ? new Date(a.dueDate).getTime()
+        : Number.MAX_SAFE_INTEGER;
+      const dueDateB = b.dueDate
+        ? new Date(b.dueDate).getTime()
+        : Number.MAX_SAFE_INTEGER;
       const dueDateDiff = dueDateA - dueDateB;
       if (dueDateDiff !== 0) return dueDateDiff;
 

@@ -20,6 +20,7 @@ export { default as RandomEventsDisplay } from "./game/RandomEventsDisplay";
 // UI Components
 export { default as AccessibilityControls } from "./ui/AccessibilityControls";
 export { default as ExportControls } from "./ui/ExportControls";
+export { default as ExportModal } from "./ui/ExportModal";
 export { default as GameSettingsModal } from "./ui/GameSettingsModal";
 export { default as OrderColorDot } from "./ui/OrderColorDot";
 export { default as RouteProgressIndicator } from "./ui/RouteProgressIndicator";

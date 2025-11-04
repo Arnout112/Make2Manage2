@@ -552,6 +552,7 @@ export class GameEngine {
     );
     const overdueOrders = orders.filter(
       (o) =>
+        o.dueDate &&
         new Date(o.dueDate) < new Date() &&
         !["completed-on-time", "completed-late", "delivered"].includes(o.status)
     );

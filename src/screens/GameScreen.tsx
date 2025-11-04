@@ -49,7 +49,6 @@ export default function GameScreen() {
   let gameState,
     currentDecisionIndex,
     scheduleOrder,
-    rebalanceWorkload,
     undoLastDecision,
     redoLastDecision,
     clearDecisionHistory,
@@ -62,7 +61,6 @@ export default function GameScreen() {
     gameState = sharedState.gameState;
     currentDecisionIndex = sharedState.currentDecisionIndex;
     scheduleOrder = sharedState.scheduleOrder;
-    rebalanceWorkload = sharedState.rebalanceWorkload;
     undoLastDecision = sharedState.undoLastDecision;
     redoLastDecision = sharedState.redoLastDecision;
     clearDecisionHistory = sharedState.clearDecisionHistory;
@@ -72,8 +70,8 @@ export default function GameScreen() {
     // Hold: pause current processing so a higher-priority order can be processed
     // Resume: move a held order back to the front of the queue (teacher/student resumes it)
     // (Both functions come from the simulation hook)
-  holdProcessing = sharedState.holdProcessing;
-  resumeProcessing = sharedState.resumeProcessing;
+    holdProcessing = sharedState.holdProcessing;
+    resumeProcessing = sharedState.resumeProcessing;
   } catch (error) {
     return (
       <div className="flex-1 p-8 bg-red-50">
