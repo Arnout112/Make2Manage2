@@ -1139,13 +1139,31 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           updatedCompletedOrders.push(finalCompletedOrder);
         } else {
           // Move to next department - return to pending for manual assignment
-          const updatedOrder = {
+          const nextDeptId = completedOrder.route[currentRouteStepIndex + 1];
+          const nextDept = prev.departments.find((d) => d.id === nextDeptId);
+
+          // Calculate processing time for the next department so we don't reuse
+          // the previous department's processingTime. Store durations in ms.
+          const nextProcessingTime = nextDept
+            ? calculateProcessingTime(completedOrder, nextDept)
+            : undefined;
+
+          const updatedOrder: Order & { processingTime?: number; processingTimeRemaining?: number } = {
             ...completedOrder,
             currentStepIndex: currentRouteStepIndex + 1,
             status: "queued" as const,
             currentDepartment: undefined, // Clear current department so it goes back to pending
           };
-          updatedPendingOrders.push(updatedOrder);
+
+          if (nextProcessingTime != null) {
+            updatedOrder.processingTime = nextProcessingTime;
+            updatedOrder.processingTimeRemaining = nextProcessingTime;
+          } else {
+            // Ensure we don't accidentally carry over old remaining time
+            delete (updatedOrder as any).processingTimeRemaining;
+          }
+
+          updatedPendingOrders.push(updatedOrder as Order);
         }
 
         newState = {
@@ -1283,8 +1301,31 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         const nextOrder = department.queue[0];
         const remainingQueue = department.queue.slice(1);
 
-        // Calculate processing time for this order at this department
-        const processingTime = calculateProcessingTime(nextOrder, department);
+        // Determine processing time and remaining time.
+        // If the order already has a `processingTimeRemaining` (from a previous hold),
+        // preserve that value so resume continues where it left off. Otherwise
+        // calculate the processing time now.
+        let origTotalMs: number | undefined = undefined;
+        let remainingMs: number;
+
+        if (nextOrder.processingTimeRemaining != null) {
+          // Preserve remaining time
+          remainingMs = nextOrder.processingTimeRemaining;
+        } else {
+          // No remaining time tracked - calculate full processing time
+          remainingMs = calculateProcessingTime(nextOrder, department);
+        }
+
+        // Preserve an original total if present (use it for progress calculations).
+        if (nextOrder.processingTime != null) {
+          // If stored as minutes (small number), convert to ms; if already ms keep it
+          origTotalMs = nextOrder.processingTime > 1000
+            ? nextOrder.processingTime
+            : nextOrder.processingTime * 60 * 1000;
+        } else {
+          // fallback: use remaining as the total when original total unknown
+          origTotalMs = remainingMs;
+        }
 
         const updatedDepartments = prev.departments.map((dept) => {
           if (dept.id === departmentId) {
@@ -1294,8 +1335,9 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
               inProcess: {
                 ...nextOrder,
                 status: "processing" as const,
-                processingTime,
-                processingTimeRemaining: processingTime,
+                // Keep the original session total (ms) and the remaining time (ms)
+                processingTime: origTotalMs,
+                processingTimeRemaining: remainingMs,
                 currentOperationIndex: 0,
                 operationProgress:
                   dept.operations.length > 0

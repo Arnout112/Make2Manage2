@@ -105,7 +105,27 @@ export default function GameScreen() {
   };
 
   const handleResumeOrder = (orderId: string) => {
+    // Resume a held order. If another order is currently processing in the
+    // same department, put that order on hold first so the resumed order can
+    // take over immediately.
+    const dept = gameState.departments.find((d) =>
+      d.queue.some((q) => q.id === orderId)
+    );
+    if (!dept) {
+      // Order not found in any department queue
+      resumeProcessing(orderId);
+      return;
+    }
+
+    // If there's an active in-process order, hold it so the resumed order
+    // can be moved to the front and started.
+    if (dept.inProcess) {
+      holdProcessing(dept.id);
+    }
+
+    // Move the held order to front of the queue and start it immediately.
     resumeProcessing(orderId);
+    startProcessing(dept.id);
   };
 
   // Batch/manual release handlers removed — students must drag orders to departments
