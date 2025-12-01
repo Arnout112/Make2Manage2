@@ -68,7 +68,7 @@ export default function GameScreen() {
     startProcessing = sharedState.startProcessing;
     // New: hold/resume actions for manual intervention
     // Hold: pause current processing so a higher-priority order can be processed
-    // Resume: move a held order back to the front of the queue (teacher/student resumes it)
+    // Resume: move a held order back to the front of the queue 
     // (Both functions come from the simulation hook)
     holdProcessing = sharedState.holdProcessing;
     resumeProcessing = sharedState.resumeProcessing;

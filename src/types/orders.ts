@@ -60,7 +60,7 @@ export interface Order {
   estimatedDuration: number; // in hours
   actualDuration?: number;
   setupTime: number; // hours needed for setup
-  processingTime: number; // actual processing hours
+  processingTime: number; // processing time (milliseconds)
 
   // Product Details
   productId: string;

@@ -103,7 +103,7 @@ export const generateInitialWIP = (
     // Determine rush status for WIP orders
     const isRush = priority === "urgent" && rng.next() < 0.2;
 
-    // Estimate processing time for full route (minutes)
+    // Estimate processing time for full route (milliseconds)
     const estimated = computeEstimatedProcessingTime(
       route,
       complexityLevel,
@@ -111,8 +111,11 @@ export const generateInitialWIP = (
       isRush
     );
 
-    // For WIP, set remaining time as random portion of estimated
-    const remainingTime = Math.max(1, Math.floor(rng.between(0.1, estimated)));
+    // For WIP, set remaining time as random portion of estimated (ms)
+    const remainingTime = Math.max(
+      1000,
+      Math.floor(rng.between(0.1 * estimated, estimated))
+    );
 
     // Determine due time based on priority level (WIP orders are assumed to be mid-process)
     const priorityDueTimes = {
@@ -244,20 +247,20 @@ const generateTimestamps = (completedSteps: number[]) => {
   }));
 };
 
-// Estimate processing time (minutes) for a route
+// Estimate processing time for a route — returns milliseconds
 const computeEstimatedProcessingTime = (
   route: number[],
   complexityLevel: string,
   processingTimeMultiplier = 1,
   isRush = false
 ): number => {
-  // Defaults (minutes)
+  // Base times (minutes)
   const nonEngineeringTime = 3; // avg minutes per non-engineering dept
 
   const engineeringByComplexity: Record<string, number> = {
-    beginner: 1.25, // halved from 2.5
-    intermediate: 2.5, // halved from 5
-    advanced: 4.5, // halved from 9
+    beginner: 1.25,
+    intermediate: 2.5,
+    advanced: 4.5,
   };
 
   const complexityMultiplier =
@@ -271,20 +274,21 @@ const computeEstimatedProcessingTime = (
 
   const engTime = engineeringByComplexity[complexityLevel] || 5;
 
-  let total = 0;
+  let totalMinutes = 0;
   for (const deptId of route) {
     if (deptId === 5) {
-      total += engTime;
+      totalMinutes += engTime;
     } else {
-      total += nonEngineeringTime;
+      totalMinutes += nonEngineeringTime;
     }
   }
 
-  total =
-    total * complexityMultiplier * processingTimeMultiplier * rushMultiplier;
+  totalMinutes =
+    totalMinutes * complexityMultiplier * processingTimeMultiplier * rushMultiplier;
 
-  // Minimum 1 minute, round up
-  return Math.max(1, Math.round(total));
+  // Minimum 1 minute, round up, then convert to milliseconds
+  const totalMs = Math.max(1, Math.round(totalMinutes)) * 60 * 1000;
+  return totalMs;
 };
 
 // Initialize departments with random characteristics
@@ -295,24 +299,24 @@ export const initializeDepartments = (settings: GameSettings): Department[] => {
     {
       id: 1,
       name: "Welding",
-      standardProcessingTime: Math.floor(rng.between(2.5, 4)), // 2.5-4 minutes with randomization
+      standardProcessingTime: Math.floor(rng.between(2.5, 4) * 60 * 1000), // 2.5-4 minutes -> ms
       operations: [
         {
           id: "weld-1",
           name: "Joint Preparation",
-          duration: 1,
+          duration: 1 * 60 * 1000,
           description: "Prepare materials and setup welding equipment",
         },
         {
           id: "weld-2",
           name: "Welding Process",
-          duration: 2,
+          duration: 2 * 60 * 1000,
           description: "Execute welding according to specifications",
         },
         {
           id: "weld-3",
           name: "Weld Inspection",
-          duration: 1,
+          duration: 1 * 60 * 1000,
           description: "Visual inspection and quality check",
         },
       ],
@@ -320,24 +324,24 @@ export const initializeDepartments = (settings: GameSettings): Department[] => {
     {
       id: 2,
       name: "Machining",
-      standardProcessingTime: Math.floor(rng.between(3, 4)), // 3-4 minutes with randomization
+      standardProcessingTime: Math.floor(rng.between(3, 4) * 60 * 1000), // 3-4 minutes -> ms
       operations: [
         {
           id: "mach-1",
           name: "Setup & Programming",
-          duration: 1,
+          duration: 1 * 60 * 1000,
           description: "Machine setup and program loading",
         },
         {
           id: "mach-2",
           name: "Rough Machining",
-          duration: 2,
+          duration: 2 * 60 * 1000,
           description: "Initial material removal and shaping",
         },
         {
           id: "mach-3",
           name: "Finish Machining",
-          duration: 1,
+          duration: 1 * 60 * 1000,
           description: "Precision finishing and final dimensions",
         },
       ],
@@ -345,24 +349,24 @@ export const initializeDepartments = (settings: GameSettings): Department[] => {
     {
       id: 3,
       name: "Painting",
-      standardProcessingTime: Math.floor(rng.between(2, 3.5)), // 2-3.5 minutes with randomization
+      standardProcessingTime: Math.floor(rng.between(2, 3.5) * 60 * 1000), // 2-3.5 minutes -> ms
       operations: [
         {
           id: "paint-1",
           name: "Surface Preparation",
-          duration: 1,
+          duration: 1 * 60 * 1000,
           description: "Clean and prepare surface for painting",
         },
         {
           id: "paint-2",
           name: "Paint Application",
-          duration: 1.5,
+          duration: 1.5 * 60 * 1000,
           description: "Apply primer and topcoat",
         },
         {
           id: "paint-3",
           name: "Drying & Inspection",
-          duration: 0.5,
+          duration: 0.5 * 60 * 1000,
           description: "Final drying and quality inspection",
         },
       ],
@@ -370,24 +374,24 @@ export const initializeDepartments = (settings: GameSettings): Department[] => {
     {
       id: 4,
       name: "Assembly",
-      standardProcessingTime: Math.floor(rng.between(2, 4)), // 2-4 minutes with randomization
+      standardProcessingTime: Math.floor(rng.between(2, 4) * 60 * 1000), // 2-4 minutes -> ms
       operations: [
         {
           id: "asm-1",
           name: "Component Gathering",
-          duration: 0.5,
+          duration: 0.5 * 60 * 1000,
           description: "Collect all required components",
         },
         {
           id: "asm-2",
           name: "Product Assembly",
-          duration: 2.5,
+          duration: 2.5 * 60 * 1000,
           description: "Assemble components according to specifications",
         },
         {
           id: "asm-3",
           name: "Final Testing",
-          duration: 1,
+          duration: 1 * 60 * 1000,
           description: "Test assembled product functionality",
         },
       ],
@@ -395,24 +399,24 @@ export const initializeDepartments = (settings: GameSettings): Department[] => {
     {
       id: 5,
       name: "Engineering",
-      standardProcessingTime: Math.floor(rng.between(3, 5)), // 3-5 minutes
+      standardProcessingTime: Math.floor(rng.between(3, 5) * 60 * 1000), // 3-5 minutes -> ms
       operations: [
         {
           id: "eng-1",
           name: "Design Review",
-          duration: 1.5,
+          duration: 1.5 * 60 * 1000,
           description: "Review design and engineering specifications",
         },
         {
           id: "eng-2",
           name: "Engineering Approval",
-          duration: 1,
+          duration: 1 * 60 * 1000,
           description: "Approve technical details and release drawings",
         },
         {
           id: "eng-3",
           name: "Prototype Check",
-          duration: 1,
+          duration: 1 * 60 * 1000,
           description: "Prototype and feasibility checks",
         },
       ],
@@ -493,7 +497,7 @@ export const generateInitialOrders = (settings: GameSettings): Order[] => {
       : undefined;
     const processingTimeMultiplier = isHalfOrder ? rng.between(0.3, 0.7) : 1.0; // Half orders take 30-70% of normal time
 
-    // Estimate processing time for this order (minutes)
+    // Estimate processing time for this order (milliseconds)
     const estimated = computeEstimatedProcessingTime(
       route,
       settings.complexityLevel,

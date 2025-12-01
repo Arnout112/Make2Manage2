@@ -28,8 +28,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   // Calculate processing time for an order at a department
   const calculateProcessingTime = useCallback(
     (order: Order, department: Department): number => {
-      // Use standard processing time as base (already in minutes, convert to milliseconds)
-      const baseTime = department.standardProcessingTime * 60 * 1000; // Convert to milliseconds
+      // Use standard processing time as base (stored in milliseconds)
+      const baseTime = department.standardProcessingTime;
       const efficiencyFactor = department.efficiency;
       const equipmentFactor = department.equipmentCondition;
       const complexityFactor =
@@ -397,7 +397,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
             if (nextOpIndex < updatedDept.operations.length) {
               // Start next operation in same department
               const nextOperation = updatedDept.operations[nextOpIndex];
-              const nextOpTime = nextOperation.duration * 60 * 1000; // Convert to milliseconds
+              const nextOpTime = nextOperation.duration; // duration stored in ms
 
               updatedDept.inProcess = {
                 ...order,
@@ -529,7 +529,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         if (!updatedDept.inProcess && updatedDept.queue.length > 0) {
           const nextOrder = updatedDept.queue.shift()!;
           const firstOperation = updatedDept.operations[0];
-          const processingTime = firstOperation.duration * 60 * 1000; // Convert to milliseconds
+          const processingTime = firstOperation.duration; // duration stored in ms
 
           updatedDept.inProcess = {
             ...nextOrder,
@@ -1318,10 +1318,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
 
         // Preserve an original total if present (use it for progress calculations).
         if (nextOrder.processingTime != null) {
-          // If stored as minutes (small number), convert to ms; if already ms keep it
-          origTotalMs = nextOrder.processingTime > 1000
-            ? nextOrder.processingTime
-            : nextOrder.processingTime * 60 * 1000;
+          // processingTime is expected to be stored in milliseconds
+          origTotalMs = nextOrder.processingTime;
         } else {
           // fallback: use remaining as the total when original total unknown
           origTotalMs = remainingMs;

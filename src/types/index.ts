@@ -25,8 +25,8 @@ export interface Order {
   timestamps: { deptId: number; start: Date; end?: Date }[];
   reworkCount: number;
   createdAt: Date;
-  processingTime?: number; // Total time needed for current step
-  processingTimeRemaining?: number; // Time remaining for current step
+  processingTime?: number; // Total time needed for current step (milliseconds)
+  processingTimeRemaining?: number; // Time remaining for current step (milliseconds)
   actualLeadTime?: number; // Actual completion time
   slaStatus?: "on-track" | "at-risk" | "overdue";
   completedAt?: Date;
@@ -69,7 +69,7 @@ export interface Department {
   equipmentCondition: number; // Equipment reliability (0.95 - 1.0)
   status: "available" | "busy" | "overloaded" | "maintenance";
   operations: DepartmentOperation[]; // List of operations this department performs
-  standardProcessingTime: number; // Standard time for all operations in minutes
+  standardProcessingTime: number; // Standard time for all operations (milliseconds)
   currentOperationIndex?: number; // For multi-step departments
   priorityRule: PriorityRule; // Priority rule for this department (FIFO, EDD, SPT)
   maxQueueSize: number; // Maximum queue capacity for this department
@@ -79,7 +79,7 @@ export interface Department {
 export interface DepartmentOperation {
   id: string;
   name: string;
-  duration: number; // Duration in minutes
+  duration: number; // Duration in milliseconds
   description: string;
 }
 
