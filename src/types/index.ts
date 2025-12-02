@@ -106,7 +106,13 @@ export type StatisticsFilter =
   | "order-doorlooptijd"
   | "doorlooptijd-per-werkplek"
   | "orderdoorlooptijd-per-afdeling";
-export type ScreenType = "landing" | "game" | "analytics" | "manual-game" | "end-game";
+export type ScreenType =
+  | "landing"
+  | "level-select"
+  | "game"
+  | "analytics"
+  | "manual-game"
+  | "end-game";
 export type NavigationScreen = "game" | "analytics" | "manual-game" | "end-game";
 
 // Game Session Management
@@ -130,6 +136,12 @@ export interface GameSettings {
   enableAdvancedRouting: boolean; // R06: advanced routing logic
   manualMode: boolean; // Educational mode: disable automatic processing, require student decisions
   difficultyPreset?: "easy" | "medium" | "hard"; // Simple difficulty presets
+  // When true, the game will use the provided `predeterminedScheduledOrders`
+  // instead of runtime-generating new orders. Useful for level-based scenarios.
+  usePredeterminedOrders?: boolean;
+  // If `usePredeterminedOrders` is true, these scheduled orders (with ms `releaseTime`)
+  // will be loaded into the initial `GameState.scheduledOrders`.
+  predeterminedScheduledOrders?: ScheduledOrder[];
 }
 
 export interface ScheduledOrder {

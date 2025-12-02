@@ -75,6 +75,13 @@ export default function LandingScreen({ onNavigate }: LandingScreenProps) {
               <BarChart3 size={24} />
               <span>View Analytics</span>
             </button>
+            <button
+              onClick={() => onNavigate("level-select")}
+              className="flex items-center space-x-2 bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-4 rounded-xl hover:bg-indigo-50 transition-colors text-lg font-semibold"
+            >
+              <Book size={24} />
+              <span>Level Select</span>
+            </button>
           </div>
         </div>
       </div>

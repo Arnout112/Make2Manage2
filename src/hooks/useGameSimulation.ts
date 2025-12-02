@@ -25,6 +25,18 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const lastUpdateTime = useRef<number>(Date.now());
   const rngRef = useRef(new SeededRandom(initialSettings.randomSeed));
 
+  // Re-initialize simulation when provided settings change (e.g., loading a level)
+  // Use a JSON-stable key so shallow prop object identity changes don't force re-init.
+  const _settingsKey = JSON.stringify(initialSettings || {});
+  useEffect(() => {
+    // Stop simulation and reset state using the new settings
+    setIsRunning(false);
+    rngRef.current = new SeededRandom(initialSettings.randomSeed);
+    lastUpdateTime.current = Date.now();
+    setSimulationSpeed(initialSettings.gameSpeed || 1);
+    setGameState(initializeGameState(initialSettings));
+  }, [_settingsKey]);
+
   // Calculate processing time for an order at a department
   const calculateProcessingTime = useCallback(
     (order: Order, department: Department): number => {
@@ -632,8 +644,11 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         }
       );
 
-  // Generate new orders (always enabled for educational scenarios)
-  const newOrders = generateNewOrders(effectiveDelta);
+  // Generate new orders unless we're using a predetermined level (then skip runtime generation)
+  let newOrders: Order[] = [];
+  if (!prevState.session.settings.usePredeterminedOrders) {
+    newOrders = generateNewOrders(effectiveDelta);
+  }
 
       // Update SLA status for all orders in the system (pending, queued, and processing)
       const updatedPendingOrders = [
@@ -792,9 +807,6 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
     [currentDecisionIndex]
   );
 
-  // Release functionality removed: orders are started via drag-and-drop and
-  // manual start/complete controls. The previous `releaseOrder` helper has
-  // been removed to avoid accidental programmatic releases.
 
   // Effect to handle simulation loop
   useEffect(() => {

@@ -3,7 +3,7 @@ import type { ScreenType, NavigationScreen } from "../../types";
 
 interface SidebarProps {
   activeScreen: ScreenType;
-  onScreenChange: (screen: NavigationScreen) => void;
+  onScreenChange: (screen: ScreenType) => void;
 }
 
 export default function Sidebar({
@@ -22,9 +22,13 @@ export default function Sidebar({
   return (
     <div className="w-20 bg-slate-800 flex flex-col items-center py-6 shrink-0">
       {/* Logo */}
-      <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mb-8">
+      <button
+        onClick={() => onScreenChange("landing")}
+        className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mb-8"
+        aria-label="Go to home"
+      >
         <span className="text-sm font-bold text-slate-800">MTO</span>
-      </div>
+      </button>
 
       {/* Navigation Items */}
       <div className="flex flex-col space-y-4">

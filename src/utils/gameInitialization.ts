@@ -576,7 +576,14 @@ export const initializeGameState = (settings: GameSettings): GameState => {
   const rng = new SeededRandom(settings.randomSeed);
   const session = createGameSession(settings);
   const departments = initializeDepartments(settings);
-  const scheduledOrders = generateScheduledOrders(settings); // Use scheduled orders instead
+  // If using a predetermined level, prefer supplied scheduled orders (already normalized to ms)
+  let scheduledOrders: ScheduledOrder[] = [];
+  if (settings.usePredeterminedOrders && settings.predeterminedScheduledOrders && settings.predeterminedScheduledOrders.length > 0) {
+    // Clone to avoid accidental mutation and ensure shape
+    scheduledOrders = settings.predeterminedScheduledOrders.map((so) => ({ ...so }));
+  } else {
+    scheduledOrders = generateScheduledOrders(settings); // Generate random scheduled orders
+  }
   const wipOrders = generateInitialWIP(rng, settings.complexityLevel);
 
   // Do NOT auto-release scheduled orders. Students must drag scheduled orders into

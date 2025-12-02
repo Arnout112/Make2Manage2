@@ -14,6 +14,7 @@ import LandingScreen from "./LandingScreen";
 import AnalyticsScreen from "./AnalyticsScreen";
 import GameScreen from "./GameScreen";
 import EndGameScreen from "./EndGameScreen";
+import LevelSelectScreen from "./LevelSelectScreen";
 import type { ScreenType, NavigationScreen, GameSettings } from "../types";
 
 // Component to monitor game completion and handle automatic navigation
@@ -76,6 +77,7 @@ export default function DashboardScreen() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<
     "easy" | "medium" | "hard"
   >("easy");
+  const [selectedLevel, setSelectedLevel] = useState<any | null>(null);
 
   // Use selected difficulty instead of random
   const presetSettings = applyDifficultyPreset(selectedDifficulty);
@@ -92,9 +94,12 @@ export default function DashboardScreen() {
     randomSeed: "shared-game-seed-123",
     difficultyPreset: selectedDifficulty,
     ...presetSettings, // Apply preset overrides
+    // If a level is selected, enable predetermined orders and attach them
+    usePredeterminedOrders: !!selectedLevel,
+    predeterminedScheduledOrders: selectedLevel || undefined,
   };
 
-  const handleNavigationChange = (screen: NavigationScreen) => {
+  const handleNavigationChange = (screen: ScreenType) => {
     setActiveScreen(screen);
   };
 
@@ -152,6 +157,17 @@ export default function DashboardScreen() {
     switch (activeScreen) {
       case "landing":
         return <LandingScreen onNavigate={handleLandingNavigate} />;
+      case "level-select":
+        return (
+          <LevelSelectScreen
+            onBack={() => setActiveScreen("landing")}
+            onSelectLevel={(scheduled) => {
+              setSelectedLevel(scheduled);
+              // After selecting a level, start the game in manual-game mode by default
+              setActiveScreen("game");
+            }}
+          />
+        );
       case "game":
         return <GameScreen />;
       case "analytics":

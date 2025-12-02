@@ -1,0 +1,44 @@
+{
+  "scheduledOrders": [
+    {
+      "order": {
+        "id": "LEVEL-001",
+        "customerId": "CUST-001",
+        "customerName": "Acme Manufacturing",
+        "priority": "normal",
+        "orderValue": 1500,
+        "route": [1, 2, 3],
+        "status": "queued",
+        "processingTime": 6,
+        "specialInstructions": "Level example order"
+      },
+      "releaseTime": 0
+    },
+    {
+      "order": {
+        "id": "LEVEL-002",
+        "customerId": "CUST-002",
+        "customerName": "TechCorp Solutions",
+        "priority": "high",
+        "orderValue": 4000,
+        "route": [2, 3, 4],
+        "status": "queued",
+        "processingTime": 8
+      },
+      "releaseTime": 1
+    },
+    {
+      "order": {
+        "id": "LEVEL-003",
+        "customerId": "CUST-003",
+        "customerName": "Global Industries",
+        "priority": "urgent",
+        "orderValue": 8000,
+        "route": [1, 4],
+        "status": "queued",
+        "processingTime": 10
+      },
+      "releaseTime": 2
+    }
+  ]
+}
