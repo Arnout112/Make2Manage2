@@ -13,9 +13,7 @@ export { default as DeliveryForecast } from "./game/DeliveryForecast";
 export { default as GameControls } from "./game/GameControls";
 export { default as OrderProcessingGuide } from "./game/OrderProcessingGuide";
 export { default as PerformanceDashboard } from "./game/PerformanceDashboard";
-export { default as QuickStartScenarios } from "./game/QuickStartScenarios";
 export { default as RandomEventsDisplay } from "./game/RandomEventsDisplay";
-// RouteOptimizer removed per request
 
 // UI Components
 export { default as AccessibilityControls } from "./ui/AccessibilityControls";
