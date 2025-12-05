@@ -93,7 +93,7 @@ export default function DeliveryForecast({
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {pendingOrders.slice(0, 10).map((order) => {
             const expectedDate = forecastData.expectedDeliveryDates[order.id];
-            if (!expectedDate) return null;
+            if (!expectedDate || !order.dueDate) return null;
 
             const status = getForecastStatus(expectedDate, order.dueDate);
             const statusConfig = {
@@ -111,6 +111,11 @@ export default function DeliveryForecast({
                 icon: AlertTriangle,
                 color: "text-red-600",
                 bg: "bg-red-50 border-red-200",
+              },
+              "no-data": {
+                icon: AlertTriangle,
+                color: "text-gray-600",
+                bg: "bg-gray-50 border-gray-200",
               },
             };
 

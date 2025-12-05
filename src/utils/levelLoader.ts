@@ -42,16 +42,24 @@ export function normalizeScheduledOrders(
   sessionDurationMinutes = 30
 ): ScheduledOrder[] {
   const sessionMs = sessionDurationMinutes * 60 * 1000;
+  if (!Array.isArray(rawList)) return [];
 
-  return (
-    rawList || []
-  )
+  return rawList
     .map((raw, idx) => {
+      if (!raw || !raw.order) {
+        throw new Error(`Scheduled order at index ${idx} is missing required 'order' object`);
+      }
+      if (!raw.order.id) {
+        throw new Error(
+          `Scheduled order at index ${idx} is missing required 'order.id' field`
+        );
+      }
+
       const releaseTime = toReleaseMs(raw, sessionDurationMinutes);
 
       const order: Order = {
-        // minimal defaults; keep any provided fields
-        id: raw.order.id || `LEVEL-${String(idx + 1).padStart(3, "0")}`,
+        // keep provided fields (id is required)
+        id: raw.order.id,
         customerId: raw.order.customerId || "CUST-LEVEL",
         customerName: raw.order.customerName || "Level Customer",
         priority: (raw.order.priority as any) || "normal",
@@ -92,9 +100,15 @@ export function normalizeScheduledOrders(
     .sort((a, b) => a.releaseTime - b.releaseTime);
 }
 
-export function loadLevelFromObject(levelObj: { scheduledOrders?: RawScheduledOrder[] }, sessionDurationMinutes = 30) {
+export function loadLevelFromObject(
+  levelObj: { id?: string; scheduledOrders?: RawScheduledOrder[] },
+  sessionDurationMinutes = 30
+) {
   if (!levelObj || !Array.isArray(levelObj.scheduledOrders)) {
     throw new Error("Invalid level object: expected { scheduledOrders: [...] }");
+  }
+  if (!levelObj.id) {
+    throw new Error("Invalid level object: missing required top-level 'id' field");
   }
   return normalizeScheduledOrders(levelObj.scheduledOrders, sessionDurationMinutes);
 }

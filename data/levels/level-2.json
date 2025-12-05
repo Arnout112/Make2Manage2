@@ -1,0 +1,117 @@
+{
+  "id": "level-2",
+  "title": "Advanced Level - Mixed Routing",
+  "description": "A longer level with engineering-first routes and mixed priorities.",
+  "durationMinutes": 30,
+  "difficulty": "intermediate",
+  "scheduledOrders": [
+    {
+      "order": {
+        "id": "ORD-009",
+        "customerId": "CUST-004",
+        "customerName": "Precision Parts Ltd",
+        "priority": "normal",
+        "orderValue": 2600,
+        "route": [2, 3, 4],
+        "status": "queued",
+        "processingTime": 7,
+        "specialInstructions": "Standard level order"
+      },
+      "releaseTime": 0
+    },
+    {
+      "order": {
+        "id": "ORD-010",
+        "customerId": "CUST-001",
+        "customerName": "Acme Manufacturing",
+        "priority": "high",
+        "orderValue": 7200,
+        "route": [5, 2, 3],
+        "status": "queued",
+        "processingTime": 12,
+        "specialInstructions": "Engineering-first"
+      },
+      "releaseTime": 2
+    },
+    {
+      "order": {
+        "id": "ORD-011",
+        "customerId": "CUST-006",
+        "customerName": "MegaCorp Industries",
+        "priority": "urgent",
+        "orderValue": 15000,
+        "route": [1, 5, 4],
+        "status": "queued",
+        "processingTime": 15,
+        "specialInstructions": "Expedite on arrival"
+      },
+      "releaseTime": 4
+    },
+    {
+      "order": {
+        "id": "ORD-012",
+        "customerId": "CUST-002",
+        "customerName": "TechCorp Solutions",
+        "priority": "normal",
+        "orderValue": 4200,
+        "route": [2, 4],
+        "status": "queued",
+        "processingTime": 6
+      },
+      "releaseTime": 6
+    },
+    {
+      "order": {
+        "id": "ORD-013",
+        "customerId": "CUST-005",
+        "customerName": "Quick Delivery Co",
+        "priority": "low",
+        "orderValue": 1100,
+        "route": [4],
+        "status": "queued",
+        "processingTime": 3
+      },
+      "releaseTime": 8
+    },
+    {
+      "order": {
+        "id": "ORD-014",
+        "customerId": "CUST-007",
+        "customerName": "SmallBiz Co",
+        "priority": "high",
+        "orderValue": 3600,
+        "route": [3, 2, 4],
+        "status": "queued",
+        "processingTime": 9
+      },
+      "releaseTime": 10
+    },
+    {
+      "order": {
+        "id": "ORD-015",
+        "customerId": "CUST-003",
+        "customerName": "Global Industries",
+        "priority": "normal",
+        "orderValue": 5300,
+        "route": [1, 2, 3, 4],
+        "status": "queued",
+        "processingTime": 11
+      },
+      "releaseTime": 12
+    },
+    {
+      "order": {
+        "id": "ORD-016",
+        "customerId": "CUST-001",
+        "customerName": "Acme Manufacturing",
+        "priority": "urgent",
+        "orderValue": 9800,
+        "route": [5, 1, 4],
+        "status": "queued",
+        "processingTime": 14,
+        "specialInstructions": "Customer requested priority"
+      },
+      "releaseTime": 15
+    }
+  ]
+}

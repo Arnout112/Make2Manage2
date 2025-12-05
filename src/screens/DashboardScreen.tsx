@@ -15,7 +15,7 @@ import AnalyticsScreen from "./AnalyticsScreen";
 import GameScreen from "./GameScreen";
 import EndGameScreen from "./EndGameScreen";
 import LevelSelectScreen from "./LevelSelectScreen";
-import type { ScreenType, NavigationScreen, GameSettings } from "../types";
+import type { ScreenType, GameSettings } from "../types";
 
 // Component to monitor game completion and handle automatic navigation
 function GameStateMonitor({

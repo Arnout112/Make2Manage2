@@ -1,8 +1,13 @@
 {
+  "id": "level-1",
+  "title": "Intro Level - Simple Flow",
+  "description": "A short level with early orders to introduce core flow.",
+  "durationMinutes": 15,
+  "difficulty": "beginner",
   "scheduledOrders": [
     {
       "order": {
-        "id": "LEVEL-001",
+        "id": "ORD-001",
         "customerId": "CUST-001",
         "customerName": "Acme Manufacturing",
         "priority": "normal",
@@ -16,7 +21,7 @@
     },
     {
       "order": {
-        "id": "LEVEL-002",
+        "id": "ORD-002",
         "customerId": "CUST-002",
         "customerName": "TechCorp Solutions",
         "priority": "high",
@@ -29,7 +34,7 @@
     },
     {
       "order": {
-        "id": "LEVEL-003",
+        "id": "ORD-003",
         "customerId": "CUST-003",
         "customerName": "Global Industries",
         "priority": "urgent",
@@ -39,6 +44,73 @@
         "processingTime": 10
       },
       "releaseTime": 2
+    },
+    {
+      "order": {
+        "id": "ORD-004",
+        "customerId": "CUST-004",
+        "customerName": "Precision Parts Ltd",
+        "priority": "normal",
+        "orderValue": 2200,
+        "route": [3, 4],
+        "status": "queued",
+        "processingTime": 5
+      },
+      "releaseTime": 3
+    },
+    {
+      "order": {
+        "id": "ORD-005",
+        "customerId": "CUST-005",
+        "customerName": "Quick Delivery Co",
+        "priority": "low",
+        "orderValue": 900,
+        "route": [4],
+        "status": "queued",
+        "processingTime": 4
+      },
+      "releaseTime": 4
+    },
+    {
+      "order": {
+        "id": "ORD-006",
+        "customerId": "CUST-006",
+        "customerName": "MegaCorp Industries",
+        "priority": "high",
+        "orderValue": 12500,
+        "route": [5, 2, 3],
+        "status": "queued",
+        "processingTime": 12,
+        "specialInstructions": "Engineering-first required"
+      },
+      "releaseTime": 6
+    },
+    {
+      "order": {
+        "id": "ORD-007",
+        "customerId": "CUST-007",
+        "customerName": "SmallBiz Co",
+        "priority": "normal",
+        "orderValue": 3200,
+        "route": [2, 4],
+        "status": "queued",
+        "processingTime": 7
+      },
+      "releaseTime": 8
+    },
+    {
+      "order": {
+        "id": "ORD-008",
+        "customerId": "CUST-002",
+        "customerName": "TechCorp Solutions",
+        "priority": "urgent",
+        "orderValue": 9800,
+        "route": [1, 5, 4],
+        "status": "queued",
+        "processingTime": 14,
+        "specialInstructions": "Expedite when released"
+      },
+      "releaseTime": 10
     }
   ]
 }

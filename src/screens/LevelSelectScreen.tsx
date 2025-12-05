@@ -1,7 +1,7 @@
-import React from "react";
 import { Play, Download, ArrowLeft } from "lucide-react";
 import type { ScheduledOrder } from "../types";
 import level1 from "../../data/levels/level-1.json";
+import level2 from "../../data/levels/level-2.json";
 import levelLoader from "../utils/levelLoader";
 
 interface LevelSelectScreenProps {
@@ -13,17 +13,15 @@ export default function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelect
   // For now a single example level 
   // TODO: extend and load from external source
   const exampleLevels = [
-    {
-      id: "level-1",
-      title: "Intro Level - Simple Flow",
-      description: "A short level with 3 orders appearing early in the session.",
-      data: level1,
-    },
+    { data: level1 },
+    { data: level2 },
   ];
 
   const handleSelect = (levelData: any) => {
     try {
-      const scheduled = levelLoader.loadLevelFromObject(levelData, 30);
+      const minutes: number = levelData?.durationMinutes || 30;
+      const scheduled = levelLoader.loadLevelFromObject(levelData, minutes);
+      console.info(`Loaded level ${levelData?.id || "?"} with ${scheduled.length} scheduled orders`);
       onSelectLevel(scheduled);
     } catch (err) {
       console.error("Failed to load level:", err);
@@ -43,23 +41,23 @@ export default function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelect
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {exampleLevels.map((lvl) => (
-            <div key={lvl.id} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div key={lvl.data.id} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">{lvl.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{lvl.description}</p>
+                  <h3 className="text-lg font-semibold text-gray-800">{lvl.data.title || "NOT FOUND"}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{lvl.data.description}</p>
                 </div>
-                <div className="text-xs text-gray-500">{lvl.id}</div>
+                <div className="text-xs text-gray-500">{lvl.data.id}</div>
               </div>
 
               <div className="mt-4 border-t border-gray-100 pt-4 text-sm text-gray-600">
                 <div className="flex items-center justify-between">
                   <div>Duration</div>
-                  <div>~15 min</div>
+                  <div>{`~${lvl.data.durationMinutes} min`}</div>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <div>Difficulty</div>
-                  <div>Beginner</div>
+                  <div className="capitalize">{lvl.data.difficulty}</div>
                 </div>
               </div>
 
@@ -79,7 +77,7 @@ export default function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelect
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = url;
-                    a.download = `${lvl.id}.json`;
+                    a.download = `${lvl.data.id}.json`;
                     a.click();
                     URL.revokeObjectURL(url);
                   }}
