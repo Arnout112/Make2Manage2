@@ -61,6 +61,8 @@ export interface Order {
   actualDuration?: number;
   setupTime: number; // hours needed for setup
   processingTime: number; // processing time (milliseconds)
+  // Optional map of department-specific processing times (ms) keyed by department id
+  perDeptProcessingTimes?: Record<number, number>;
 
   // Product Details
   productId: string;

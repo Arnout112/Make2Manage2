@@ -1,7 +1,11 @@
 import type { ScheduledOrder, Order } from "../types";
 
 type RawScheduledOrder = {
-  order: Partial<Order> & { createdAt?: string | number | Date };
+  order: Partial<Order> & {
+    createdAt?: string | number | Date;
+    // Allow authors to supply per-department times as numbers (ms) or small numbers (minutes)
+    perDeptProcessingTimes?: Record<number, number> | Record<string, number>;
+  };
   // Accept a few shorthand time properties for authoring convenience
   releaseTimeMs?: number; // absolute ms from game start
   releaseTime?: number; // either ms (large) or minutes (small) depending on authoring
@@ -90,7 +94,30 @@ export function normalizeScheduledOrders(
         processingTimeMultiplier: raw.order.processingTimeMultiplier,
         specialInstructions: raw.order.specialInstructions,
         rushOrder: raw.order.rushOrder,
+        // normalize per-department processing times (accept minutes or ms in authored JSON)
+        perDeptProcessingTimes: undefined,
       } as Order;
+      // Preserve and normalize authored per-department processing times if provided (keys may be strings)
+      if (raw.order.perDeptProcessingTimes && typeof raw.order.perDeptProcessingTimes === "object") {
+        const map: Record<number, number> = {};
+        Object.entries(raw.order.perDeptProcessingTimes as any).forEach(([k, v]) => {
+          const key = Number(k);
+          // treat small numbers as minutes, large numbers (>1000) as ms
+          let valMs = 0;
+          if (typeof v === "number") {
+            valMs = v > 1000 ? v : Math.round(v) * 60 * 1000;
+          } else if (!Number.isNaN(Number(v))) {
+            const num = Number(v);
+            valMs = num > 1000 ? num : Math.round(num) * 60 * 1000;
+          }
+          if (!Number.isNaN(key) && valMs > 0) map[key] = valMs;
+        });
+        (order as any).perDeptProcessingTimes = map;
+
+        // Compute total processingTime as sum of per-department ms values
+        const total = Object.values(map).reduce((sum, v) => sum + v, 0);
+        order.processingTime = total > 0 ? total : order.processingTime;
+      }
 
       return {
         order,

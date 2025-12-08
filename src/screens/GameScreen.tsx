@@ -784,7 +784,8 @@ export default function GameScreen() {
                                 {idx + 1}
                               </span>
                               <OrderColorDot orderId={order.id} size="xs" />
-                              <span className="font-medium">{order.id}</span>
+                              <span className="font-medium text-gray-800">{order.id}</span>
+                              <span className="text-gray-500">({formatTime(order.processingTime)})</span>
                             </div>
                             <div className="text-right">
                               <div
@@ -1230,9 +1231,10 @@ export default function GameScreen() {
                                     {index + 1}
                                   </span>
                                   <OrderColorDot orderId={order.id} size="xs" />
-                                  <span className="font-medium">
+                                  <span className="font-medium text-gray-800">
                                     {order.id}
                                   </span>
+                                  <span className="text-gray-500">({formatTime(order.processingTimeRemaining ?? order.processingTime)})</span>
                                 </div>
                                 <div className="text-right">
                                   <div

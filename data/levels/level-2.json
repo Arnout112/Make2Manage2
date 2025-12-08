@@ -14,7 +14,8 @@
         "orderValue": 2600,
         "route": [2, 3, 4],
         "status": "queued",
-        "processingTime": 7,
+        "perDeptProcessingTimes": { "2": 3, "3": 2, "4": 2 },
+        "dueGameMinutes": 8,
         "specialInstructions": "Standard level order"
       },
       "releaseTime": 0
@@ -28,7 +29,8 @@
         "orderValue": 7200,
         "route": [5, 2, 3],
         "status": "queued",
-        "processingTime": 12,
+        "perDeptProcessingTimes": { "5": 5, "2": 4, "3": 3 },
+        "dueGameMinutes": 8,
         "specialInstructions": "Engineering-first"
       },
       "releaseTime": 2
@@ -42,7 +44,8 @@
         "orderValue": 15000,
         "route": [1, 5, 4],
         "status": "queued",
-        "processingTime": 15,
+        "perDeptProcessingTimes": { "1": 3, "5": 5, "4": 3 },
+        "dueGameMinutes": 8,
         "specialInstructions": "Expedite on arrival"
       },
       "releaseTime": 4
@@ -56,7 +59,8 @@
         "orderValue": 4200,
         "route": [2, 4],
         "status": "queued",
-        "processingTime": 6
+        "perDeptProcessingTimes": { "2": 3, "4": 2 },
+        "dueGameMinutes": 14
       },
       "releaseTime": 6
     },
@@ -69,7 +73,8 @@
         "orderValue": 1100,
         "route": [4],
         "status": "queued",
-        "processingTime": 3
+        "perDeptProcessingTimes": { "4": 2 },
+        "dueGameMinutes": 18
       },
       "releaseTime": 8
     },
@@ -82,7 +87,8 @@
         "orderValue": 3600,
         "route": [3, 2, 4],
         "status": "queued",
-        "processingTime": 9
+        "perDeptProcessingTimes": { "3": 3, "2": 4, "4": 3 },
+        "dueGameMinutes": 16
       },
       "releaseTime": 10
     },
@@ -95,7 +101,8 @@
         "orderValue": 5300,
         "route": [1, 2, 3, 4],
         "status": "queued",
-        "processingTime": 11
+        "perDeptProcessingTimes": { "1": 2, "2": 3, "3": 2, "4": 2 },
+        "dueGameMinutes": 20
       },
       "releaseTime": 12
     },
@@ -108,7 +115,8 @@
         "orderValue": 9800,
         "route": [5, 1, 4],
         "status": "queued",
-        "processingTime": 14,
+        "perDeptProcessingTimes": { "5": 5, "1": 3, "4": 3 },
+        "dueGameMinutes": 19,
         "specialInstructions": "Customer requested priority"
       },
       "releaseTime": 15

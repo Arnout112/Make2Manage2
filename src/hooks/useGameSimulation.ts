@@ -503,10 +503,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
                   completedOrder.currentStepIndex = nextStepIndex;
                   completedOrder.currentDepartment = nextDeptId;
                   completedOrder.status = "queued";
-                  completedOrder.processingTime = calculateProcessingTime(
-                    completedOrder,
-                    nextDept
-                  );
+                  // Prefer authored per-department times when available, else calculate
+                  completedOrder.processingTime = (completedOrder as any).perDeptProcessingTimes?.[nextDeptId] ?? calculateProcessingTime(completedOrder, nextDept);
                   completedOrder.currentOperationIndex = 0; // Reset for next department
                   completedOrder.operationProgress = []; // Reset operation progress
 
@@ -541,7 +539,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         if (!updatedDept.inProcess && updatedDept.queue.length > 0) {
           const nextOrder = updatedDept.queue.shift()!;
           const firstOperation = updatedDept.operations[0];
-          const processingTime = firstOperation.duration; // duration stored in ms
+          // Use authored per-department time if available, otherwise fall back to operation duration
+          const processingTime = (nextOrder as any).perDeptProcessingTimes?.[dept.id] ?? firstOperation.duration; // duration stored in ms
 
           updatedDept.inProcess = {
             ...nextOrder,
@@ -554,7 +553,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
                 operationId: firstOperation.id,
                 operationName: firstOperation.name,
                 startTime: new Date(),
-                duration: firstOperation.duration,
+                  duration: firstOperation.duration,
                 completed: false,
               },
             ],
@@ -898,10 +897,14 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           const queueIndex = dept.queue.findIndex((o) => o.id === orderId);
           if (queueIndex !== -1) {
             const updatedQueue = [...dept.queue];
-            updatedQueue[queueIndex] = {
+            const updatedOrder = {
               ...updatedQueue[queueIndex],
               route: newRoute,
+              processingTime:
+                (updatedQueue[queueIndex] as any).perDeptProcessingTimes?.[dept.id] ??
+                calculateProcessingTime({ ...updatedQueue[queueIndex], route: newRoute } as any, dept),
             };
+            updatedQueue[queueIndex] = updatedOrder;
             return { ...dept, queue: updatedQueue };
           }
 
@@ -934,7 +937,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         newState!
       );
     },
-    [gameState, recordDecision]
+    [gameState, recordDecision, calculateProcessingTime]
   );
 
   // R04-R05: Advanced scheduling functionality
@@ -966,9 +969,16 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         );
         const updatedDepartments = prev.departments.map((dept) => {
           if (dept.id === departmentId) {
+            const queuedOrder: any = {
+              ...updatedOrder,
+              // Use authored per-department time when available
+              processingTime:
+                (updatedOrder as any).perDeptProcessingTimes?.[dept.id] ??
+                calculateProcessingTime(updatedOrder as any, dept),
+            };
             return {
               ...dept,
-              queue: [...dept.queue, updatedOrder],
+              queue: [...dept.queue, queuedOrder],
             };
           }
           return dept;
@@ -990,7 +1000,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         newState!
       );
     },
-    [gameState, recordDecision]
+    [gameState, recordDecision, calculateProcessingTime]
   );
 
   // R04-R05: Workload rebalancing functionality
@@ -1022,16 +1032,22 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           }
         });
 
-        // Distribute moved orders evenly across target departments
+        // Distribute moved orders evenly across target departments and set per-department times
         const finalDepartments = updatedDepartments.map((dept) => {
           if (targetIds.includes(dept.id)) {
             const targetIndex = targetIds.indexOf(dept.id);
             const ordersForThisDept = movedOrders.filter(
               (_, index) => index % targetIds.length === targetIndex
             );
+            const adjusted = ordersForThisDept.map((o) => ({
+              ...o,
+              processingTime:
+                (o as any).perDeptProcessingTimes?.[dept.id] ??
+                calculateProcessingTime(o as any, dept),
+            }));
             return {
               ...dept,
-              queue: [...dept.queue, ...ordersForThisDept],
+              queue: [...dept.queue, ...adjusted],
             };
           }
           return dept;
@@ -1056,7 +1072,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         newState!
       );
     },
-    [gameState, recordDecision]
+    [gameState, recordDecision, calculateProcessingTime]
   );
 
   // Complete processing in manual mode
@@ -1314,28 +1330,32 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         const remainingQueue = department.queue.slice(1);
 
         // Determine processing time and remaining time.
-        // If the order already has a `processingTimeRemaining` (from a previous hold),
-        // preserve that value so resume continues where it left off. Otherwise
-        // calculate the processing time now.
+        // Prefer authored per-department times when available. If the order already has
+        // `processingTimeRemaining` (from a previous hold), preserve that value so resume
+        // continues where it left off. Otherwise derive remaining and total from authored
+        // per-department times or calculate them.
         let origTotalMs: number | undefined = undefined;
         let remainingMs: number;
 
+        const perDeptMs = (nextOrder as any).perDeptProcessingTimes?.[departmentId];
+
         if (nextOrder.processingTimeRemaining != null) {
-          // Preserve remaining time
+          // Preserve remaining time (resume case)
           remainingMs = nextOrder.processingTimeRemaining;
+        } else if (perDeptMs != null) {
+          // Use authored per-department time (already normalized to ms by loader)
+          remainingMs = perDeptMs;
+        } else if (nextOrder.processingTime != null && (nextOrder as any).perDeptProcessingTimes == null) {
+          // If the order has a processingTime but no per-department map, treat that value as the dept total
+          remainingMs = nextOrder.processingTime as number;
         } else {
-          // No remaining time tracked - calculate full processing time
+          // Fallback: calculate full processing time using department characteristics
           remainingMs = calculateProcessingTime(nextOrder, department);
         }
 
-        // Preserve an original total if present (use it for progress calculations).
-        if (nextOrder.processingTime != null) {
-          // processingTime is expected to be stored in milliseconds
-          origTotalMs = nextOrder.processingTime;
-        } else {
-          // fallback: use remaining as the total when original total unknown
-          origTotalMs = remainingMs;
-        }
+        // For progress calculations we prefer the per-department total when available,
+        // otherwise fall back to the order.processingTime or remaining time.
+        origTotalMs = perDeptMs ?? (typeof nextOrder.processingTime === "number" ? nextOrder.processingTime : remainingMs);
 
         const updatedDepartments = prev.departments.map((dept) => {
           if (dept.id === departmentId) {
