@@ -1,7 +1,7 @@
 import React from "react";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import type { Order } from "../../types";
-
+import { formatTime } from "../../utils/timeFormat";
 interface RouteProgressIndicatorProps {
   order: Order;
   departmentNames?: { [key: number]: string };
@@ -85,6 +85,17 @@ const RouteProgressIndicator: React.FC<RouteProgressIndicatorProps> = ({
                   <CheckCircle size={classes.arrow} />
                 ) : (
                   <span className={classes.text}>{deptId}</span>
+                )}
+              </div>
+
+              {/* Per-department time (if authored) */}
+              <div className="mt-1">
+                {order.perDeptProcessingTimes && order.perDeptProcessingTimes[deptId] ? (
+                  <span className="text-[10px] text-gray-500">
+                    {formatTime(order.perDeptProcessingTimes[deptId])}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-gray-300">–</span>
                 )}
               </div>
 

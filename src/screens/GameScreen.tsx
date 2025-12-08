@@ -6,6 +6,7 @@ import {
   XCircle,
   CheckCircle,
 } from "lucide-react";
+import { formatTime } from "../utils/timeFormat";
 import type { Order } from "../types";
 import {
   RandomEventsDisplay,
@@ -275,7 +276,7 @@ export default function GameScreen() {
     if (timeRemaining > 0) {
       alert(
         `⏱️ Processing not yet complete!\n\n` +
-          `Order ${processingOrder.id} still needs ${formatTime(
+          `Order ${processingOrder.id} still needs ${formatTimeDisplay(
             timeRemaining
           )} to finish processing in ${dept.name}.\n\n` +
           `Please wait for the timer to reach 00:00 before completing.`
@@ -357,7 +358,7 @@ export default function GameScreen() {
     // Show educational feedback
     alert(
       `🔄 Started processing Order ${nextOrder.id} in ${dept.name}\n\n` +
-        `Processing time: ${formatTime(nextOrder.processingTimeRemaining)}\n` +
+        `Processing time: ${formatTimeDisplay(nextOrder.processingTimeRemaining)}\n` +
         `Priority: ${nextOrder.priority.toUpperCase()}\n\n` +
         `Click "Complete Processing" when you're ready to finish this step.`
     );
@@ -374,11 +375,9 @@ export default function GameScreen() {
     }
   };
 
-  const formatTime = (milliseconds?: number) => {
+  const formatTimeDisplay = (milliseconds?: number) => {
     if (!milliseconds) return "--";
-    const minutes = Math.floor(milliseconds / (60 * 1000));
-    const seconds = Math.floor((milliseconds % (60 * 1000)) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    return formatTime(milliseconds);
   };
 
   return (
@@ -785,7 +784,7 @@ export default function GameScreen() {
                               </span>
                               <OrderColorDot orderId={order.id} size="xs" />
                               <span className="font-medium text-gray-800">{order.id}</span>
-                              <span className="text-gray-500">({formatTime(order.processingTime)})</span>
+                              <span className="text-gray-500">({formatTimeDisplay(order.processingTime)})</span>
                             </div>
                             <div className="text-right">
                               <div
@@ -845,7 +844,7 @@ export default function GameScreen() {
                           }`}
                         >
                           {(eng.inProcess.processingTimeRemaining || 0) > 0
-                            ? formatTime(eng.inProcess.processingTimeRemaining)
+                            ? formatTimeDisplay(eng.inProcess.processingTimeRemaining)
                             : "READY ✅"}
                         </span>
                       </div>
@@ -915,7 +914,7 @@ export default function GameScreen() {
                             >
                               {isComplete
                                 ? "✅ Complete Processing"
-                                : `⏳ Processing... (${formatTime(
+                                : `⏳ Processing... (${formatTimeDisplay(
                                     timeRemaining
                                   )})`}
                             </button>
@@ -1118,7 +1117,7 @@ export default function GameScreen() {
                               >
                                 {(dept.inProcess.processingTimeRemaining || 0) >
                                 0
-                                  ? formatTime(
+                                  ? formatTimeDisplay(
                                       dept.inProcess.processingTimeRemaining
                                     )
                                   : "READY ✅"}
@@ -1197,7 +1196,7 @@ export default function GameScreen() {
                                   >
                                     {isComplete
                                       ? "✅ Complete Processing"
-                                      : `⏳ Processing... (${formatTime(
+                                      : `⏳ Processing... (${formatTimeDisplay(
                                           timeRemaining
                                         )})`}
                                   </button>
@@ -1234,7 +1233,7 @@ export default function GameScreen() {
                                   <span className="font-medium text-gray-800">
                                     {order.id}
                                   </span>
-                                  <span className="text-gray-500">({formatTime(order.processingTimeRemaining ?? order.processingTime)})</span>
+                                  <span className="text-gray-500">({formatTimeDisplay(order.processingTimeRemaining ?? order.processingTime)})</span>
                                 </div>
                                 <div className="text-right">
                                   <div
