@@ -748,6 +748,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         session: { ...prev.session, status: "running" },
       }));
     }
+    lastUpdateTime.current = Date.now();
     setIsRunning(true);
   }, [gameState.session.status]);
 
