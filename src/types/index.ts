@@ -43,6 +43,7 @@ export interface Order {
     | "rework"
     | "quality_issue"; // Reason for half order
   processingTimeMultiplier?: number; // Multiplier for processing time (0.5 for half orders, 1.0 for normal)
+  perDeptProcessingTimes?: Record<number, number>; // Optional per-department authored processing times (milliseconds)
 }
 
 export interface OperationProgress {
