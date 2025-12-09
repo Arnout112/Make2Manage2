@@ -62,7 +62,8 @@ export interface Department {
   name: string;
   queue: Order[];
   inProcess?: Order;
-  utilization: number;
+  operatingTime: number; // Total operating time in milliseconds
+  utilization: number; // Percentage of time department is busy (0-100%)
   avgCycleTime: number;
   totalProcessed: number;
   capacity: number; // Max orders that can be processed simultaneously

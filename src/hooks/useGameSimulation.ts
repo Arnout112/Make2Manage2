@@ -307,7 +307,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const processManualDepartmentUpdates = useCallback(
     (
       departments: Department[],
-      elapsedMs: number
+      elapsedMs: number,
+      totalElapsedMs: number
     ): {
       updatedDepartments: Department[];
       completedOrders: Order[];
@@ -322,10 +323,12 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         // Only update processing time countdown if student started processing
         if (updatedDept.inProcess) {
           const order = updatedDept.inProcess;
-          const timeRemaining = Math.max(
-            0,
-            (order.processingTimeRemaining || 0) - elapsedMs
-          );
+          const prevRemaining = order.processingTimeRemaining || 0;
+          const timeRemaining = Math.max(0, prevRemaining - elapsedMs);
+
+          // Amount of processing time consumed this tick (don't exceed previous remaining)
+          const consumed = Math.min(elapsedMs, prevRemaining);
+          updatedDept.operatingTime += consumed;
 
           updatedDept.inProcess = {
             ...order,
@@ -355,8 +358,16 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           updatedDept.status = "available";
         }
 
-        // Calculate utilization based on current state (for educational feedback)
-        updatedDept.utilization = updatedDept.inProcess ? 100 : 0;
+        // Calculate utilization (operatingTime / totalElapsedMs)
+        const denom = Math.max(1, totalElapsedMs);
+        updatedDept.utilization = Math.min(
+          100,
+          ((updatedDept.operatingTime || 0) / denom) * 100
+        );
+
+        // Update WIP counter
+        updatedDept.wipCount = (updatedDept.queue.length + (updatedDept.inProcess ? 1 : 0));
+
 
         updatedDepartments.push(updatedDept);
       });
@@ -370,7 +381,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   const processDepartmentUpdates = useCallback(
     (
       departments: Department[],
-      elapsedMs: number
+      elapsedMs: number,
+      totalElapsedMs: number
     ): {
       updatedDepartments: Department[];
       completedOrders: Order[];
@@ -386,7 +398,10 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         // Process currently active order
         if (updatedDept.inProcess) {
           const order = updatedDept.inProcess;
-          const timeRemaining = (order.processingTimeRemaining || 0) - elapsedMs;
+          const prevRemaining = order.processingTimeRemaining || 0;
+          const consumed = Math.min(elapsedMs, prevRemaining);
+          updatedDept.operatingTime = (updatedDept.operatingTime || 0) + consumed;
+          const timeRemaining = prevRemaining - elapsedMs;
 
           if (timeRemaining <= 0) {
             // Current operation completed
@@ -564,13 +579,16 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           };
         }
 
-        // Update utilization
-        const queueLoad = updatedDept.queue.length;
-        const processingLoad = updatedDept.inProcess ? 1 : 0;
+        // Calculate utilization (operatingTime / totalElapsedMs)
+        const denom = Math.max(1, totalElapsedMs);
         updatedDept.utilization = Math.min(
           100,
-          (queueLoad + processingLoad) * 25
+          ((updatedDept.operatingTime || 0) / denom) * 100
         );
+
+        // Update WIP counter
+        updatedDept.wipCount = (updatedDept.queue.length + (updatedDept.inProcess ? 1 : 0));
+
 
         // Update status
         if (updatedDept.utilization > 85) {
@@ -665,8 +683,8 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
       // Process department updates - only automatic processing if NOT in manual mode
       const { updatedDepartments: finalDepartments, completedOrders, events } = prevState.session
         .settings.manualMode
-        ? processManualDepartmentUpdates(updatedDepartments, effectiveDelta) // Manual mode: only timers and visual feedback
-        : processDepartmentUpdates(updatedDepartments, effectiveDelta); // Automatic mode: normal processing
+        ? processManualDepartmentUpdates(updatedDepartments, effectiveDelta, newElapsedTime) // Manual mode: only timers and visual feedback
+        : processDepartmentUpdates(updatedDepartments, effectiveDelta, newElapsedTime); // Automatic mode: normal processing
 
       // R07: Generate random events
   const randomEvents = generateRandomEvents(updatedDepartments, effectiveDelta);

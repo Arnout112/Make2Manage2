@@ -1071,7 +1071,7 @@ export default function GameScreen() {
                             Utilization
                           </div>
                           <div className="text-lg font-bold text-gray-800">
-                            {Math.round(capacityPercentage)}%
+                            {Math.round(dept.utilization)}%
                           </div>
                         </div>
                       </div>

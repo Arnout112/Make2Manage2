@@ -429,9 +429,11 @@ export const initializeDepartments = (settings: GameSettings): Department[] => {
     return {
       ...dept,
       queue: [],
-      utilization: Math.floor(rng.between(40, 85)), // Start with some utilization
+      // Start with some initial values
+      operatingTime: 0,   
+      utilization: 0, //utilization: Math.floor(rng.between(40, 85)), // Start with some utilization
       avgCycleTime: dept.standardProcessingTime,
-      totalProcessed: Math.floor(rng.between(15, 35)), // Previous orders processed
+      totalProcessed : 0, //totalProcessed: Math.floor(rng.between(15, 35)), // Previous orders processed
       capacity: config.capacity,
       efficiency: config.efficiency,
       equipmentCondition: config.equipmentCondition,
