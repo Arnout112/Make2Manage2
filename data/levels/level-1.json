@@ -5,120 +5,186 @@
   "durationMinutes": 15,
   "difficulty": "beginner",
   "scheduledOrders": [
+
     {
-      "order": {
-        "id": "ORD-001",
-        "customerId": "CUST-001",
-        "customerName": "Acme Manufacturing",
-        "priority": "normal",
-        "orderValue": 1500,
-        "route": [1, 2, 3],
-        "status": "queued",
-        "perDeptProcessingTimes": { "1": 2, "2": 3, "3": 2 },
-        "dueGameMinutes": 8,
-        "specialInstructions": "Level example order"
-      },
+      "order": { "id": "ORD-001", "customerId": "CUST-001", "customerName": "Acme Manufacturing", "priority": "normal", "orderValue": 1200, "route": [1], "status": "queued", "perDeptProcessingTimes": { "1": 60000 }, "dueGameMinutes": 6 },
       "releaseTime": 0
     },
     {
-      "order": {
-        "id": "ORD-002",
-        "customerId": "CUST-002",
-        "customerName": "TechCorp Solutions",
-        "priority": "high",
-        "orderValue": 4000,
-        "route": [2, 3, 4],
-        "status": "queued",
-        "perDeptProcessingTimes": { "2": 4, "3": 3, "4": 3 },
-        "dueGameMinutes": 7
-      },
-      "releaseTime": 1
+      "order": { "id": "ORD-002", "customerId": "CUST-002", "customerName": "TechCorp Solutions", "priority": "normal", "orderValue": 1100, "route": [2], "status": "queued", "perDeptProcessingTimes": { "2": 60000 }, "dueGameMinutes": 6 },
+      "releaseTime": 5000
     },
     {
-      "order": {
-        "id": "ORD-003",
-        "customerId": "CUST-003",
-        "customerName": "Global Industries",
-        "priority": "urgent",
-        "orderValue": 8000,
-        "route": [1, 4],
-        "status": "queued",
-        "perDeptProcessingTimes": { "1": 3, "4": 3 },
-        "dueGameMinutes": 6
-      },
-      "releaseTime": 2
+      "order": { "id": "ORD-003", "customerId": "CUST-003", "customerName": "Global Industries", "priority": "high", "orderValue": 1800, "route": [1,2], "status": "queued", "perDeptProcessingTimes": { "1": 30000, "2": 30000 }, "dueGameMinutes": 5 },
+      "releaseTime": 15000
     },
     {
-      "order": {
-        "id": "ORD-004",
-        "customerId": "CUST-004",
-        "customerName": "Precision Parts Ltd",
-        "priority": "normal",
-        "orderValue": 2200,
-        "route": [3, 4],
-        "status": "queued",
-        "perDeptProcessingTimes": { "3": 2, "4": 2 },
-        "dueGameMinutes": 11
-      },
-      "releaseTime": 3
+      "order": { "id": "ORD-004", "customerId": "CUST-004", "customerName": "Precision Parts Ltd", "priority": "normal", "orderValue": 1000, "route": [3], "status": "queued", "perDeptProcessingTimes": { "3": 45000 }, "dueGameMinutes": 8 },
+      "releaseTime": 60000
     },
     {
-      "order": {
-        "id": "ORD-005",
-        "customerId": "CUST-005",
-        "customerName": "Quick Delivery Co",
-        "priority": "low",
-        "orderValue": 900,
-        "route": [4],
-        "status": "queued",
-        "perDeptProcessingTimes": { "4": 2 },
-        "dueGameMinutes": 14
-      },
-      "releaseTime": 4
+      "order": { "id": "ORD-005", "customerId": "CUST-005", "customerName": "Quick Delivery Co", "priority": "normal", "orderValue": 900, "route": [4], "status": "queued", "perDeptProcessingTimes": { "4": 30000 }, "dueGameMinutes": 10 },
+      "releaseTime": 80000
     },
     {
-      "order": {
-        "id": "ORD-006",
-        "customerId": "CUST-006",
-        "customerName": "MegaCorp Industries",
-        "priority": "high",
-        "orderValue": 12500,
-        "route": [5, 2, 3],
-        "status": "queued",
-        "perDeptProcessingTimes": { "5": 5, "2": 4, "3": 3 },
-        "dueGameMinutes": 12,
-        "specialInstructions": "Engineering-first required"
-      },
-      "releaseTime": 6
+      "order": { "id": "ORD-006", "customerId": "CUST-006", "customerName": "MegaCorp Industries", "priority": "high", "orderValue": 2200, "route": [2,4], "status": "queued", "perDeptProcessingTimes": { "2": 30000, "4": 30000 }, "dueGameMinutes": 7 },
+      "releaseTime": 100000
     },
     {
-      "order": {
-        "id": "ORD-007",
-        "customerId": "CUST-007",
-        "customerName": "SmallBiz Co",
-        "priority": "normal",
-        "orderValue": 3200,
-        "route": [2, 4],
-        "status": "queued",
-        "perDeptProcessingTimes": { "2": 3, "4": 2 },
-        "dueGameMinutes": 15
-      },
-      "releaseTime": 8
+      "order": { "id": "ORD-007", "customerId": "CUST-007", "customerName": "SmallBiz Co", "priority": "normal", "orderValue": 950, "route": [1], "status": "queued", "perDeptProcessingTimes": { "1": 40000 }, "dueGameMinutes": 12 },
+      "releaseTime": 120000
     },
     {
-      "order": {
-        "id": "ORD-008",
-        "customerId": "CUST-002",
-        "customerName": "TechCorp Solutions",
-        "priority": "urgent",
-        "orderValue": 9800,
-        "route": [1, 5, 4],
-        "status": "queued",
-        "perDeptProcessingTimes": { "1": 3, "5": 5, "4": 3 },
-        "dueGameMinutes": 14,
-        "specialInstructions": "Expedite when released"
-      },
-      "releaseTime": 10
+      "order": { "id": "ORD-008", "customerId": "CUST-001", "customerName": "Acme Manufacturing", "priority": "normal", "orderValue": 1300, "route": [3,4], "status": "queued", "perDeptProcessingTimes": { "3": 20000, "4": 20000 }, "dueGameMinutes": 9 },
+      "releaseTime": 140000
+    },
+    {
+      "order": { "id": "ORD-009", "customerId": "CUST-002", "customerName": "TechCorp Solutions", "priority": "high", "orderValue": 2000, "route": [1,4], "status": "queued", "perDeptProcessingTimes": { "1": 30000, "4": 15000 }, "dueGameMinutes": 6 },
+      "releaseTime": 160000
+    },
+    {
+      "order": { "id": "ORD-010", "customerId": "CUST-003", "customerName": "Global Industries", "priority": "normal", "orderValue": 1101, "route": [2], "status": "queued", "perDeptProcessingTimes": { "2": 35000 }, "dueGameMinutes": 11 },
+      "releaseTime": 180000
+    },
+    {
+      "order": { "id": "ORD-011", "customerId": "CUST-004", "customerName": "Precision Parts Ltd", "priority": "normal", "orderValue": 1200, "route": [1], "status": "queued", "perDeptProcessingTimes": { "1": 30000 }, "dueGameMinutes": 10 },
+      "releaseTime": 200000
+    },
+    {
+      "order": { "id": "ORD-012", "customerId": "CUST-005", "customerName": "Quick Delivery Co", "priority": "normal", "orderValue": 800, "route": [3], "status": "queued", "perDeptProcessingTimes": { "3": 40000 }, "dueGameMinutes": 13 },
+      "releaseTime": 220000
+    },
+    {
+      "order": { "id": "ORD-013", "customerId": "CUST-006", "customerName": "MegaCorp Industries", "priority": "high", "orderValue": 2100, "route": [4,2], "status": "queued", "perDeptProcessingTimes": { "4": 15000, "2": 15000 }, "dueGameMinutes": 7 },
+      "releaseTime": 240000
+    },
+    {
+      "order": { "id": "ORD-014", "customerId": "CUST-007", "customerName": "SmallBiz Co", "priority": "normal", "orderValue": 1000, "route": [1,3], "status": "queued", "perDeptProcessingTimes": { "1": 10000, "3": 10000 }, "dueGameMinutes": 12 },
+      "releaseTime": 260000
+    },
+    {
+      "order": { "id": "ORD-015", "customerId": "CUST-001", "customerName": "Acme Manufacturing", "priority": "urgent", "orderValue": 2500, "route": [2], "status": "queued", "perDeptProcessingTimes": { "2": 10000 }, "dueGameMinutes": 5 },
+      "releaseTime": 280000
+    },
+    {
+      "order": { "id": "ORD-016", "customerId": "CUST-002", "customerName": "TechCorp Solutions", "priority": "normal", "orderValue": 900, "route": [4], "status": "queued", "perDeptProcessingTimes": { "4": 15000 }, "dueGameMinutes": 11 },
+      "releaseTime": 300000
+    },
+    {
+      "order": { "id": "ORD-017", "customerId": "CUST-003", "customerName": "Global Industries", "priority": "normal", "orderValue": 1150, "route": [1,2], "status": "queued", "perDeptProcessingTimes": { "1": 15000, "2": 10000 }, "dueGameMinutes": 10 },
+      "releaseTime": 320000
+    },
+    {
+      "order": { "id": "ORD-018", "customerId": "CUST-004", "customerName": "Precision Parts Ltd", "priority": "normal", "orderValue": 1050, "route": [3], "status": "queued", "perDeptProcessingTimes": { "3": 20000 }, "dueGameMinutes": 12 },
+      "releaseTime": 340000
+    },
+    {
+      "order": { "id": "ORD-019", "customerId": "CUST-005", "customerName": "Quick Delivery Co", "priority": "high", "orderValue": 1750, "route": [4,1], "status": "queued", "perDeptProcessingTimes": { "4": 10000, "1": 10000 }, "dueGameMinutes": 7 },
+      "releaseTime": 360000
+    },
+    {
+      "order": { "id": "ORD-020", "customerId": "CUST-006", "customerName": "MegaCorp Industries", "priority": "normal", "orderValue": 1300, "route": [2], "status": "queued", "perDeptProcessingTimes": { "2": 20000 }, "dueGameMinutes": 9 },
+      "releaseTime": 380000
+    },
+    {
+      "order": { "id": "ORD-021", "customerId": "CUST-007", "customerName": "SmallBiz Co", "priority": "normal", "orderValue": 950, "route": [3], "status": "queued", "perDeptProcessingTimes": { "3": 15000 }, "dueGameMinutes": 13 },
+      "releaseTime": 400000
+    },
+    {
+      "order": { "id": "ORD-022", "customerId": "CUST-001", "customerName": "Acme Manufacturing", "priority": "normal", "orderValue": 1100, "route": [1,4], "status": "queued", "perDeptProcessingTimes": { "1": 15000, "4": 15000 }, "dueGameMinutes": 10 },
+      "releaseTime": 420000
+    },
+    {
+      "order": { "id": "ORD-023", "customerId": "CUST-002", "customerName": "TechCorp Solutions", "priority": "high", "orderValue": 2100, "route": [2,3], "status": "queued", "perDeptProcessingTimes": { "2": 10000, "3": 10000 }, "dueGameMinutes": 7 },
+      "releaseTime": 440000
+    },
+    {
+      "order": { "id": "ORD-024", "customerId": "CUST-003", "customerName": "Global Industries", "priority": "normal", "orderValue": 1200, "route": [1], "status": "queued", "perDeptProcessingTimes": { "1": 20000 }, "dueGameMinutes": 11 },
+      "releaseTime": 460000
+    },
+    {
+      "order": { "id": "ORD-025", "customerId": "CUST-004", "customerName": "Precision Parts Ltd", "priority": "normal", "orderValue": 980, "route": [4], "status": "queued", "perDeptProcessingTimes": { "4": 15000 }, "dueGameMinutes": 12 },
+      "releaseTime": 480000
+    },
+    {
+      "order": { "id": "ORD-026", "customerId": "CUST-005", "customerName": "Quick Delivery Co", "priority": "normal", "orderValue": 900, "route": [3,2], "status": "queued", "perDeptProcessingTimes": { "3": 10000, "2": 10000 }, "dueGameMinutes": 13 },
+      "releaseTime": 500000
+    },
+    {
+      "order": { "id": "ORD-027", "customerId": "CUST-006", "customerName": "MegaCorp Industries", "priority": "high", "orderValue": 2300, "route": [1,2], "status": "queued", "perDeptProcessingTimes": { "1": 15000, "2": 15000 }, "dueGameMinutes": 7 },
+      "releaseTime": 520000
+    },
+    {
+      "order": { "id": "ORD-028", "customerId": "CUST-007", "customerName": "SmallBiz Co", "priority": "normal", "orderValue": 1000, "route": [4], "status": "queued", "perDeptProcessingTimes": { "4": 20000 }, "dueGameMinutes": 12 },
+      "releaseTime": 540000
+    },
+    {
+      "order": { "id": "ORD-029", "customerId": "CUST-001", "customerName": "Acme Manufacturing", "priority": "normal", "orderValue": 1150, "route": [2], "status": "queued", "perDeptProcessingTimes": { "2": 15000 }, "dueGameMinutes": 11 },
+      "releaseTime": 560000
+    },
+    {
+      "order": { "id": "ORD-030", "customerId": "CUST-002", "customerName": "TechCorp Solutions", "priority": "normal", "orderValue": 900, "route": [1,3], "status": "queued", "perDeptProcessingTimes": { "1": 10000, "3": 10000 }, "dueGameMinutes": 12 },
+      "releaseTime": 580000
+    },
+    {
+      "order": { "id": "ORD-031", "customerId": "CUST-003", "customerName": "Global Industries", "priority": "high", "orderValue": 1950, "route": [4,2], "status": "queued", "perDeptProcessingTimes": { "4": 10000, "2": 10000 }, "dueGameMinutes": 8 },
+      "releaseTime": 600000
+    },
+    {
+      "order": { "id": "ORD-032", "customerId": "CUST-004", "customerName": "Precision Parts Ltd", "priority": "normal", "orderValue": 1050, "route": [1], "status": "queued", "perDeptProcessingTimes": { "1": 20000 }, "dueGameMinutes": 13 },
+      "releaseTime": 620000
+    },
+    {
+      "order": { "id": "ORD-033", "customerId": "CUST-005", "customerName": "Quick Delivery Co", "priority": "normal", "orderValue": 850, "route": [3], "status": "queued", "perDeptProcessingTimes": { "3": 15000 }, "dueGameMinutes": 14 },
+      "releaseTime": 640000
+    },
+    {
+      "order": { "id": "ORD-034", "customerId": "CUST-006", "customerName": "MegaCorp Industries", "priority": "normal", "orderValue": 1250, "route": [2,1], "status": "queued", "perDeptProcessingTimes": { "2": 15000, "1": 15000 }, "dueGameMinutes": 9 },
+      "releaseTime": 660000
+    },
+    {
+      "order": { "id": "ORD-035", "customerId": "CUST-007", "customerName": "SmallBiz Co", "priority": "high", "orderValue": 1800, "route": [4], "status": "queued", "perDeptProcessingTimes": { "4": 10000 }, "dueGameMinutes": 8 },
+      "releaseTime": 680000
+    },
+    {
+      "order": { "id": "ORD-036", "customerId": "CUST-001", "customerName": "Acme Manufacturing", "priority": "normal", "orderValue": 980, "route": [1,2], "status": "queued", "perDeptProcessingTimes": { "1": 10000, "2": 10000 }, "dueGameMinutes": 12 },
+      "releaseTime": 700000
+    },
+    {
+      "order": { "id": "ORD-037", "customerId": "CUST-002", "customerName": "TechCorp Solutions", "priority": "normal", "orderValue": 1150, "route": [3,4], "status": "queued", "perDeptProcessingTimes": { "3": 10000, "4": 10000 }, "dueGameMinutes": 11 },
+      "releaseTime": 720000
+    },
+    {
+      "order": { "id": "ORD-038", "customerId": "CUST-003", "customerName": "Global Industries", "priority": "normal", "orderValue": 1050, "route": [2], "status": "queued", "perDeptProcessingTimes": { "2": 20000 }, "dueGameMinutes": 13 },
+      "releaseTime": 740000
+    },
+    {
+      "order": { "id": "ORD-039", "customerId": "CUST-004", "customerName": "Precision Parts Ltd", "priority": "normal", "orderValue": 990, "route": [1], "status": "queued", "perDeptProcessingTimes": { "1": 15000 }, "dueGameMinutes": 14 },
+      "releaseTime": 760000
+    },
+    {
+      "order": { "id": "ORD-040", "customerId": "CUST-005", "customerName": "Quick Delivery Co", "priority": "high", "orderValue": 2000, "route": [4,1], "status": "queued", "perDeptProcessingTimes": { "4": 10000, "1": 10000 }, "dueGameMinutes": 8 },
+      "releaseTime": 780000
+    },
+    {
+      "order": { "id": "ORD-041", "customerId": "CUST-006", "customerName": "MegaCorp Industries", "priority": "normal", "orderValue": 1100, "route": [2], "status": "queued", "perDeptProcessingTimes": { "2": 15000 }, "dueGameMinutes": 12 },
+      "releaseTime": 800000
+    },
+    {
+      "order": { "id": "ORD-042", "customerId": "CUST-007", "customerName": "SmallBiz Co", "priority": "normal", "orderValue": 950, "route": [3], "status": "queued", "perDeptProcessingTimes": { "3": 15000 }, "dueGameMinutes": 13 },
+      "releaseTime": 820000
+    },
+    {
+      "order": { "id": "ORD-043", "customerId": "CUST-001", "customerName": "Acme Manufacturing", "priority": "normal", "orderValue": 1200, "route": [1,4], "status": "queued", "perDeptProcessingTimes": { "1": 10000, "4": 10000 }, "dueGameMinutes": 11 },
+      "releaseTime": 840000
+    },
+    {
+      "order": { "id": "ORD-044", "customerId": "CUST-002", "customerName": "TechCorp Solutions", "priority": "high", "orderValue": 2100, "route": [2,3], "status": "queued", "perDeptProcessingTimes": { "2": 10000, "3": 10000 }, "dueGameMinutes": 9 },
+      "releaseTime": 860000
+    },
+    {
+      "order": { "id": "ORD-045", "customerId": "CUST-003", "customerName": "Global Industries", "priority": "normal", "orderValue": 1000, "route": [1], "status": "queued", "perDeptProcessingTimes": { "1": 15000 }, "dueGameMinutes": 14 },
+      "releaseTime": 880000
     }
   ]
 }
