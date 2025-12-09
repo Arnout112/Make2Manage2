@@ -129,6 +129,25 @@ export default function GameScreen() {
     startProcessing(dept.id);
   };
 
+  // Kick-start a queued order: if there's an active in-process order, hold it
+  // so the queued order can be moved to the front and start immediately.
+  const handleKickStartOrder = (departmentId: number, orderId: string) => {
+    const dept = gameState.departments.find((d) => d.id === departmentId);
+    if (!dept) return;
+
+    // If something is already processing, hold it so the selected queued order
+    // can take over immediately.
+    if (dept.inProcess) {
+      holdProcessing(departmentId);
+    }
+
+    // Move the chosen order to the front of the queue (works for queued or held)
+    resumeProcessing(orderId);
+
+    // Start processing in this department
+    startProcessing(departmentId);
+  };
+
   // Batch/manual release handlers removed — students must drag orders to departments
 
   const handleAssignOrderToDepartment = (
@@ -141,7 +160,7 @@ export default function GameScreen() {
 
     // Check if this order's route includes this department
     if (!order.route.includes(departmentId)) {
-      alert(
+      console.log(
         `❌ Order ${order.id} does not include ${department.name} in its route.\n\n` +
           `Route: ${order.route
             .map((id) => {
@@ -303,7 +322,7 @@ export default function GameScreen() {
 
     if (isLastStep) {
       // Order is fully completed - mark as done
-      alert(
+      console.log(
         `🎉 Order ${processingOrder.id} has completed ALL manufacturing steps!\n\nThis order is now FINISHED and will be moved to completed orders.`
       );
     } else {
@@ -330,7 +349,7 @@ export default function GameScreen() {
         })
         .join(" → ");
 
-      alert(
+      console.log(
         `✅ Order ${processingOrder.id} completed: ${dept.name}\n\n` +
           `✓ Completed: ${completedDeptNames}\n` +
           `→ Still needs: ${remainingDeptNames}\n\n` +
@@ -355,8 +374,8 @@ export default function GameScreen() {
     // Start processing the next order in the queue
     startProcessing(departmentId);
 
-    // Show educational feedback
-    alert(
+    // log order details
+    console.log(
       `🔄 Started processing Order ${nextOrder.id} in ${dept.name}\n\n` +
         `Processing time: ${formatTimeDisplay(nextOrder.processingTimeRemaining)}\n` +
         `Priority: ${nextOrder.priority.toUpperCase()}\n\n` +
@@ -795,16 +814,27 @@ export default function GameScreen() {
                                 {getPriorityLabel(order.priority)}
                               </div>
                               {/* Resume button for held orders */}
-                              {order.status === "on-hold" && (
-                                <div className="mt-1">
-                                  <button
-                                    onClick={() => handleResumeOrder(order.id)}
-                                    className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200"
-                                  >
-                                    Resume
-                                  </button>
-                                </div>
-                              )}
+                                  {order.status === "on-hold" && (
+                                    <div className="mt-1">
+                                      <button
+                                        onClick={() => handleResumeOrder(order.id)}
+                                        className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200"
+                                      >
+                                        Resume
+                                      </button>
+                                    </div>
+                                  )}
+                                  {/* Start button for queued items */}
+                                  {gameState.session.settings.manualMode && order.status === "queued" && (
+                                    <div className="mt-1">
+                                      <button
+                                        onClick={() => handleKickStartOrder(eng.id, order.id)}
+                                        className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                                      >
+                                        Start
+                                      </button>
+                                    </div>
+                                  )}
                             </div>
                           </div>
                         );
@@ -816,14 +846,15 @@ export default function GameScreen() {
                     </div>
                   )}
 
-                  {gameState.session.settings.manualMode &&
-                    !eng.inProcess &&
+                    {gameState.session.settings.manualMode &&
                     sortedQueue.length > 0 && (
                       <button
                         onClick={() => handleStartProcessing(eng.id)}
                         className="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-green-700 transition-colors"
                       >
-                        Start Processing {sortedQueue[0].id}
+                        {sortedQueue[0].processingTimeRemaining
+                          ? `Resume Processing ${sortedQueue[0].id}`
+                          : `Start Processing ${sortedQueue[0].id}`}
                       </button>
                     )}
 
@@ -1268,6 +1299,17 @@ export default function GameScreen() {
                                       </button>
                                     </div>
                                   )}
+                                  {/* Start button for queued items (kick-out current in-process if necessary) */}
+                                  {gameState.session.settings.manualMode && order.status === "queued" && (
+                                    <div className="mt-1">
+                                      <button
+                                        onClick={() => handleKickStartOrder(dept.id, order.id)}
+                                        className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                                      >
+                                        Start
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -1287,7 +1329,9 @@ export default function GameScreen() {
                             onClick={() => handleStartProcessing(dept.id)}
                             className="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-green-700 transition-colors"
                           >
-                            Start Processing Order {sortedQueue[0].id}
+                            {sortedQueue[0].processingTimeRemaining
+                              ? `Resume Processing ${sortedQueue[0].id}`
+                              : `Start Processing Order ${sortedQueue[0].id}`}
                           </button>
                         )}
                     </div>
