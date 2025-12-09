@@ -993,8 +993,9 @@ export default function GameScreen() {
                             {dept.name}
                           </h3>
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">
-                          {dept.standardProcessingTime}min processing time
+                        <div className="text-xs text-gray-600 mt-1"> 
+                          {/* dept.operatingTime in min, rounded to 1 decimal place */}
+                          {Math.floor(dept.operatingTime / 60000 *10)/10} min processing time
                         </div>
                         {blockedByEngineering && (
                           <div className="mt-2 flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-md border border-orange-300">
