@@ -530,7 +530,7 @@ export default function PerformanceDashboard({
                 {gameState.departments.map((dept) => (
                   <div
                     key={dept.id}
-                    className="bg-gray-50 border border-gray-200 rounded-lg p-4"
+                    className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-black"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -556,17 +556,17 @@ export default function PerformanceDashboard({
 
                     <div className="grid grid-cols-3 gap-3 text-sm">
                       <div>
-                        <p className="text-gray-600">Queue</p>
+                        <p className="text-black">Queue</p>
                         <p className="font-semibold">{dept.queue.length}</p>
                       </div>
                       <div>
-                        <p className="text-gray-600">Processed</p>
+                        <p className="text-black">Processed</p>
                         <p className="font-semibold">{dept.totalProcessed}</p>
                       </div>
                       <div>
-                        <p className="text-gray-600">Cycle Time</p>
+                        <p className="text-black">Cycle Time</p>
                         <p className="font-semibold">
-                          {dept.avgCycleTime.toFixed(1)}m
+                          {(dept.operatingTime/60000).toFixed(1)} m
                         </p>
                       </div>
                     </div>
