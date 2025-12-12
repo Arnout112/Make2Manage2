@@ -519,6 +519,9 @@ export default function GameScreen() {
                               <span className="font-mono text-xs font-semibold text-gray-800">
                                 {order.id}
                               </span>
+                              <span className="ml-2 text-xs font-semibold text-gray-700">
+                                Reward: <span className="text-emerald-600 font-semibold">${order.orderValue}</span>
+                              </span>
                             </div>
                             <span
                               className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
@@ -645,6 +648,9 @@ export default function GameScreen() {
                                 <OrderColorDot orderId={order.id} size="sm" />
                                 <span className="font-mono text-xs font-semibold text-gray-800">
                                   {order.id}
+                                </span>
+                                <span className="ml-2 text-xs font-semibold text-gray-700">
+                                  Reward: <span className="text-emerald-600 font-semibold">${order.orderValue}</span>
                                 </span>
                               </div>
                               <span

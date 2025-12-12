@@ -159,6 +159,7 @@ export interface GameState {
   completedOrders: Order[];
   rejectedOrders: Order[];
   totalOrdersGenerated: number;
+  totalScore: number;
   gameEvents: GameEvent[];
   performance: GamePerformance;
   sessionLog: SessionLog; // R12: Complete session logging

@@ -492,7 +492,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
                     (60 * 1000)
                 );
                 completedOrders.push(completedOrder);
-
+                
                 events.push({
                   id: `event-${Date.now()}-${Math.random()}`,
                   type: "order-completed",
@@ -687,7 +687,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         : processDepartmentUpdates(updatedDepartments, effectiveDelta, newElapsedTime); // Automatic mode: normal processing
 
       // R07: Generate random events
-  const randomEvents = generateRandomEvents(updatedDepartments, effectiveDelta);
+      const randomEvents = generateRandomEvents(updatedDepartments, effectiveDelta);
       const allEvents = [...events, ...randomEvents, ...orderReleaseEvents];
 
       // Update performance metrics
@@ -697,6 +697,11 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         ...prevState.completedOrders,
         ...completedOrders,
       ].filter((order) => order.status === "completed-on-time").length;
+
+      const totalScore = [
+        ...prevState.completedOrders,
+        ...completedOrders,
+      ].map(order => order.orderValue).reduce((sum, val) => sum + val, 0);
 
       const onTimeDeliveryRate =
         totalCompleted > 0 ? (onTimeCompleted / totalCompleted) * 100 : 0;
@@ -742,6 +747,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           utilizationRates,
           bottleneckDepartment,
         },
+        totalScore,
       };
     });
   }, [

@@ -12,6 +12,7 @@ interface GameControlsHeaderProps {
   onDifficultyChange?: (difficulty: "easy" | "medium" | "hard") => void;
   simulationSpeed?: number;
   setSimulationSpeed?: (s: number) => void;
+  totalScore?: number;
 }
 
 import { formatTime } from "../../utils/timeFormat";
@@ -26,6 +27,7 @@ export default function GameControlsHeader({
   onDifficultyChange,
   simulationSpeed = 1,
   setSimulationSpeed,
+  totalScore,
 }: GameControlsHeaderProps) {
   return (
     <div className="w-full space-y-2">
@@ -61,6 +63,14 @@ export default function GameControlsHeader({
             </div>
           )}
 
+          {/* Score Display */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Score:</span>
+            <span className="font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded font-medium">
+              ${totalScore}
+            </span>
+          </div>
+
           {/* Events Display */}
           <HeaderEventsDisplay events={events} />
         </div>
@@ -87,6 +97,16 @@ export default function GameControlsHeader({
             </button>
           )}
 
+          {gameSession.status === "paused" && (
+            <button
+              onClick={onStart}
+              className="flex items-center space-x-2 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+            >
+              <Play size={16} />
+              <span>Resume</span>
+            </button>
+          )}
+
           {/* Simulation speed control next to Pause/Resume */}
           {setSimulationSpeed && (
             <button
@@ -104,16 +124,6 @@ export default function GameControlsHeader({
               title="Cycle simulation speed (1x → 2x → 4x)"
             >
               <span className="font-medium">x{simulationSpeed || 1}</span>
-            </button>
-          )}
-
-          {gameSession.status === "paused" && (
-            <button
-              onClick={onStart}
-              className="flex items-center space-x-2 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
-            >
-              <Play size={16} />
-              <span>Resume</span>
             </button>
           )}
 

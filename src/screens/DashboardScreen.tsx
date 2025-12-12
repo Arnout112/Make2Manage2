@@ -67,6 +67,7 @@ function GameControlsHeaderWrapper({
       onDifficultyChange={onDifficultyChange}
       simulationSpeed={simulationSpeed}
       setSimulationSpeed={setSimulationSpeed}
+      totalScore={gameState.totalScore}
     />
   );
 }
