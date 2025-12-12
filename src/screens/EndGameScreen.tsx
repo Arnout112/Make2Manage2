@@ -541,33 +541,12 @@ Make2Manage Leeromgeving`;
         ) / completedOrders.length
       : 0;
 
-  const totalRevenue = completedOrders.reduce(
-    (sum, order) => sum + order.orderValue,
-    0
-  );
+  const totalRevenue = gameState.totalScore;
   const averageOrderValue =
     completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
 
   // Department statistics
   const departmentStats = gameState.departments.map((dept) => {
-    // Calculate a better utilization metric based on throughput and game duration
-    const sessionMinutes = Math.max(
-      1,
-      gameState.session.elapsedTime / (60 * 1000)
-    );
-    const throughputRate = dept.totalProcessed / sessionMinutes; // orders per minute
-    const maxTheoreticalRate = 1 / (dept.standardProcessingTime || 20); // 1 order per standard processing time
-    const throughputUtilization = Math.min(
-      100,
-      (throughputRate / maxTheoreticalRate) * 100
-    );
-
-    // Use the higher of current utilization or throughput-based utilization
-    const effectiveUtilization = Math.max(
-      dept.utilization,
-      throughputUtilization
-    );
-
     return {
       name:
         {
@@ -577,7 +556,7 @@ Make2Manage Leeromgeving`;
           4: "Assembly",
           5: "Engineering",
         }[dept.id] || `Dept ${dept.id}`,
-      utilization: effectiveUtilization,
+      utilization: dept.utilization,
       processed: dept.totalProcessed,
       queueLength: dept.queue.length,
       currentUtilization: dept.utilization, // Keep original for debugging
