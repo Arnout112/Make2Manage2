@@ -586,7 +586,10 @@ export const initializeGameState = (settings: GameSettings): GameState => {
   } else {
     scheduledOrders = generateScheduledOrders(settings); // Generate random scheduled orders
   }
-  const wipOrders = generateInitialWIP(rng, settings.complexityLevel);
+
+  // initialize WIP orders - turned off
+  const wipOrders: Order[] = [];
+  //const wipOrders = generateInitialWIP(rng, settings.complexityLevel);
 
   // Do NOT auto-release scheduled orders. Students must drag scheduled orders into
   // the workflow manually. Start with no immediate scheduled orders.
@@ -630,6 +633,7 @@ export const initializeGameState = (settings: GameSettings): GameState => {
     completedOrders: [],
     rejectedOrders: [],
     totalOrdersGenerated: scheduledOrders.length + wipOrders.length,
+    totalScore: 0,
     gameEvents: [
       {
         id: `event-${Date.now()}`,
