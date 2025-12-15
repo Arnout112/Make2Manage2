@@ -202,23 +202,29 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
   // Update SLA status for orders
   const updateSLAStatus = useCallback(
     (order: Order): Order => {
-      // Use game-time aware 'now' so SLA reacts to simulationSpeed
-      const sessionStart = gameState.sessionLog?.startTime
+      // Compute SLA using game-time only (ms since session start)
+      const sessionStartMs = gameState.sessionLog?.startTime
         ? gameState.sessionLog.startTime.getTime()
-        : Date.now();
-      const now = sessionStart + gameState.session.elapsedTime;
+        : undefined;
 
-      // Compute absolute due time: prefer dueGameMinutes (relative to session start) else fallback to legacy dueDate
-      const dueAbsoluteMs =
+      // nowGameMs: milliseconds since session start (game-time)
+      const nowGameMs = gameState.session.elapsedTime;
+
+      // Convert order.createdAt and order.dueDate to game-time offsets when possible
+      const createdGameMs = sessionStartMs && order.createdAt
+        ? Math.max(0, order.createdAt.getTime() - sessionStartMs)
+        : 0;
+
+      const dueGameMs =
         order.dueGameMinutes !== undefined
-          ? sessionStart + order.dueGameMinutes * 60 * 1000
-          : order.dueDate
-          ? order.dueDate.getTime()
-          : order.createdAt.getTime() + 30 * 60 * 1000; // fallback 30 minutes
+          ? order.dueGameMinutes * 60 * 1000
+          : sessionStartMs && order.dueDate
+          ? Math.max(0, order.dueDate.getTime() - sessionStartMs)
+          : createdGameMs + 30 * 60 * 1000; // fallback 30 minutes after created
 
-      const timeLeft = dueAbsoluteMs - now;
-      const totalTime = dueAbsoluteMs - order.createdAt.getTime();
-      const elapsed = now - order.createdAt.getTime();
+      const timeLeft = dueGameMs - nowGameMs;
+      const totalTime = dueGameMs - createdGameMs;
+      const elapsed = nowGameMs - createdGameMs;
       const progress = totalTime > 0 ? elapsed / totalTime : 1;
 
       let slaStatus: "on-track" | "at-risk" | "overdue";
@@ -232,7 +238,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
 
       return { ...order, slaStatus };
     },
-    [gameState.sessionLog]
+    [gameState.sessionLog, gameState.session.elapsedTime]
   );
 
   // R07: Generate random events (equipment failures, rush orders, etc.)
@@ -480,19 +486,22 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
                   }
                 });
                 
-                // Update SLA status one final time before completion to ensure accuracy
-                // Note: The order already has updated SLA status from the department processing above
-                
-                completedOrder.status =
-                  completedOrder.slaStatus === "overdue"
+                // Preserve SLA status if already set; otherwise compute it using updateSLAStatus
+                const preservedSla = completedOrder.slaStatus;
+                const finalCompletedOrder = preservedSla
+                  ? { ...completedOrder }
+                  : updateSLAStatus(completedOrder);
+
+                finalCompletedOrder.status =
+                  (preservedSla || finalCompletedOrder.slaStatus) === "overdue"
                     ? "completed-late"
                     : "completed-on-time";
-                completedOrder.completedAt = now;
-                completedOrder.actualLeadTime = Math.floor(
-                  (now.getTime() - completedOrder.createdAt.getTime()) /
+                finalCompletedOrder.completedAt = now;
+                finalCompletedOrder.actualLeadTime = Math.floor(
+                  (now.getTime() - finalCompletedOrder.createdAt.getTime()) /
                     (60 * 1000)
                 );
-                completedOrders.push(completedOrder);
+                completedOrders.push(finalCompletedOrder);
                 
                 events.push({
                   id: `event-${Date.now()}-${Math.random()}`,
@@ -1180,11 +1189,14 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
             }
           });
           
-          // Update SLA status one final time before completion to ensure accuracy
-          const finalCompletedOrder = updateSLAStatus(completedOrder);
-          
+          // Preserve existing SLA status if present; otherwise compute it using game-time
+          const preservedSla = completedOrder.slaStatus;
+          const finalCompletedOrder = preservedSla
+            ? { ...completedOrder }
+            : updateSLAStatus(completedOrder);
+
           finalCompletedOrder.status =
-            finalCompletedOrder.slaStatus === "overdue"
+            (preservedSla || finalCompletedOrder.slaStatus) === "overdue"
               ? "completed-late"
               : "completed-on-time";
           finalCompletedOrder.completedAt = now;
