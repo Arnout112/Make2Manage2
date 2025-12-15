@@ -12,6 +12,7 @@ import {
   SeededRandom,
   generateRandomRoute,
 } from "../utils/gameInitialization";
+import { calculateReward } from "../utils";
 
 export const useGameSimulation = (initialSettings: GameSettings) => {
   const [gameState, setGameState] = useState<GameState>(() =>
@@ -698,10 +699,11 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
         ...completedOrders,
       ].filter((order) => order.status === "completed-on-time").length;
 
+      // Calculate total score
       const totalScore = [
         ...prevState.completedOrders,
         ...completedOrders,
-      ].map(order => order.orderValue).reduce((sum, val) => sum + val, 0);
+      ].map(order => calculateReward(order)).reduce((sum, val) => sum + val, 0); //Take total of completed orders score accounting for overdue orders
 
       const onTimeDeliveryRate =
         totalCompleted > 0 ? (onTimeCompleted / totalCompleted) * 100 : 0;

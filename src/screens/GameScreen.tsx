@@ -26,6 +26,7 @@ import {
 } from "../utils/priorityColors";
 import { formatOrderDueTime } from "../utils/dateUtils";
 import type { PriorityRule } from "../types";
+import { calculateReward } from "../utils";
 
 export default function GameScreen() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -520,7 +521,7 @@ export default function GameScreen() {
                                 {order.id}
                               </span>
                               <span className="ml-2 text-xs font-semibold text-gray-700">
-                                Reward: <span className="text-emerald-600 font-semibold">${order.orderValue}</span>
+                                Reward: <span className="text-emerald-600 font-semibold">${calculateReward(order)}</span>
                               </span>
                             </div>
                             <span
@@ -650,7 +651,7 @@ export default function GameScreen() {
                                   {order.id}
                                 </span>
                                 <span className="ml-2 text-xs font-semibold text-gray-700">
-                                  Reward: <span className="text-emerald-600 font-semibold">${order.orderValue}</span>
+                                  Reward: <span className="text-emerald-600 font-semibold">${calculateReward(order)}</span>
                                 </span>
                               </div>
                               <span

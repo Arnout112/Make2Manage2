@@ -3,6 +3,8 @@
  * Educational Focus: Teaching manufacturing calculations and KPIs
  */
 
+import type { Order } from "../types";
+
 /**
  * Educational function: Calculate order profitability
  * Teaching: Financial analysis in manufacturing
@@ -385,6 +387,23 @@ export function calculateProductionEfficiency(
     classification,
     improvements,
   };
+}
+
+/**
+ * Calculate reward for an order based on lateness.
+ * Late orders receive 50% of their base `orderValue`.
+ *
+ * @param order Object of type Order.
+ */
+export function calculateReward(
+  order: Order,
+): number {
+  if (order.slaStatus === "overdue") {
+    return Math.round(order.orderValue * 0.5);
+  }
+  else {
+  return order.orderValue;
+  }
 }
 
 /**
