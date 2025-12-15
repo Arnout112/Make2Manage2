@@ -26,7 +26,7 @@ import {
 } from "../utils/priorityColors";
 import { formatOrderDueTime } from "../utils/dateUtils";
 import type { PriorityRule } from "../types";
-import { calculateReward } from "../utils";
+import { calculateReward, getRewardTextColor } from "../utils";
 
 export default function GameScreen() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -521,7 +521,7 @@ export default function GameScreen() {
                                 {order.id}
                               </span>
                               <span className="ml-2 text-xs font-semibold text-gray-700">
-                                Reward: <span className="text-emerald-600 font-semibold">${calculateReward(order)}</span>
+                                Reward: <span className={`${getRewardTextColor(order)} font-semibold`}>${calculateReward(order)}</span>
                               </span>
                             </div>
                             <span
@@ -651,7 +651,7 @@ export default function GameScreen() {
                                   {order.id}
                                 </span>
                                 <span className="ml-2 text-xs font-semibold text-gray-700">
-                                  Reward: <span className="text-emerald-600 font-semibold">${calculateReward(order)}</span>
+                                  Reward: <span className={`${getRewardTextColor(order)} font-semibold`}>${calculateReward(order)}</span>
                                 </span>
                               </div>
                               <span
@@ -820,6 +820,9 @@ export default function GameScreen() {
                               >
                                 {getPriorityLabel(order.priority)}
                               </div>
+                              <div className="text-xs">
+                                Reward: <span className={`${getRewardTextColor(order)} font-semibold`}>${calculateReward(order)}</span>
+                              </div>
                               {/* Resume button for held orders */}
                                   {order.status === "on-hold" && (
                                     <div className="mt-1">
@@ -924,6 +927,10 @@ export default function GameScreen() {
                         >
                           {getPriorityLabel(eng.inProcess.priority)}
                         </span>
+                      </div>
+
+                      <div className="text-xs mb-2">
+                        Reward: <span className={`${getRewardTextColor(eng.inProcess)} font-semibold`}>${calculateReward(eng.inProcess)}</span>
                       </div>
 
                       {(() => {
@@ -1204,6 +1211,10 @@ export default function GameScreen() {
                                 {getPriorityLabel(dept.inProcess.priority)}
                               </span>
                             </div>
+                            <div className="text-xs mb-2">
+                              <span className="text-blue-700">Reward: </span>
+                              <span className={`${getRewardTextColor(dept.inProcess)} font-semibold`}>${calculateReward(dept.inProcess)}</span>
+                            </div>
                             {(() => {
                               const timeRemaining =
                                 dept.inProcess.processingTimeRemaining || 0;
@@ -1292,6 +1303,9 @@ export default function GameScreen() {
                                     )}`}
                                   >
                                     {getPriorityLabel(order.priority)}
+                                  </div>
+                                  <div className="text-xs text-gray-600">
+                                    Reward: <span className={`${getRewardTextColor(order)} font-semibold`}>${calculateReward(order)}</span>
                                   </div>
                                   {/* Resume button for held orders */}
                                   {order.status === "on-hold" && (

@@ -4,6 +4,8 @@
  */
 
 // Predefined color palette for orders (ensuring good contrast and accessibility)
+import type { Order } from "../types";
+
 const ORDER_COLORS = [
   {
     bg: "bg-red-100",
@@ -118,4 +120,12 @@ export function getOrderColorWithOpacity(
     ...color,
     bg: bgClass,
   };
+}
+
+/**
+ * Return a Tailwind text color class for reward display based on SLA.
+ * Late orders use amber, others use emerald.
+ */
+export function getRewardTextColor(order: Order): string {
+  return order.slaStatus === "overdue" ? "text-amber-600" : "text-emerald-600";
 }
