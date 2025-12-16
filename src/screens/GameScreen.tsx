@@ -92,6 +92,8 @@ export default function GameScreen() {
     );
   }
 
+  const currentElapsedMinutes = Math.floor(gameState.session.elapsedTime / 60000);
+
   // Game controls are now handled by GameControlsHeaderWrapper in DashboardScreen
 
   const openOrderDetail = (order: Order) => {
@@ -525,7 +527,7 @@ export default function GameScreen() {
                               </span>
                             </div>
                             <span
-                              className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
+                              className={`inline-block text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
                                 order
                               )}`}
                             >
@@ -1152,6 +1154,31 @@ export default function GameScreen() {
                                 <span className="text-sm font-medium text-blue-900">
                                   Processing: {dept.inProcess.id}
                                 </span>
+                                <div className="ml-3">
+                                  <span
+                                    className={`inline-block text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
+                                      dept.inProcess
+                                    )}`}
+                                  >
+                                    {dept.inProcess.slaStatus === "on-track"
+                                      ? "OK"
+                                      : dept.inProcess.slaStatus === "at-risk"
+                                      ? "RISK"
+                                      : "LATE"}
+                                  </span>
+                                  {(() => {
+                                    const dueInfo = formatOrderDueTime(
+                                      dept.inProcess.dueGameMinutes,
+                                      dept.inProcess.priority,
+                                      currentElapsedMinutes
+                                    );
+                                    return (
+                                      <span className="ml-2 text-xs text-gray-600">
+                                        {dueInfo.display}
+                                      </span>
+                                    );
+                                  })()}
+                                </div>
                               </div>
                               <span
                                 className={`text-xs font-bold ${
@@ -1286,8 +1313,21 @@ export default function GameScreen() {
                                   <span className="text-gray-500">({formatTimeDisplay(order.processingTimeRemaining ?? order.processingTime)})</span>
                                 </div>
                                 <div className="text-right">
-                                  <div
-                                    className={`text-xs px-1 py-0.5 rounded text-white font-medium ${getSLAStatusColor(
+                                    
+                                    {(() => {
+                                      const dueInfo = formatOrderDueTime(
+                                        order.dueGameMinutes,
+                                        order.priority,
+                                        currentElapsedMinutes
+                                      );
+                                      return (
+                                        <span className="ml-2 text-xs text-gray-600">
+                                          {dueInfo.display}
+                                        </span>
+                                      );
+                                    })()}
+                                    <div
+                                    className={`inline-block text-xs px-1 py-0.5 ml-0.5 rounded text-white font-medium ${getSLAStatusColor(
                                       order
                                     )}`}
                                   >

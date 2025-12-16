@@ -33,15 +33,13 @@ export function formatOrderDueTime(
     };
   } else if (timeRemaining < 1) {
     return {
-      display: `Due NOW (${priorityLabels[priority]})`,
+      display: `Due NOW`,
       isOverdue: false,
       timeRemaining,
     };
   } else {
     return {
-      display: `Due in ${timeRemaining.toFixed(0)}min (${
-        priorityLabels[priority]
-      })`,
+      display: `Due in ${timeRemaining.toFixed(0)}min`,
       isOverdue: false,
       timeRemaining,
     };
