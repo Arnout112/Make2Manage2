@@ -11,7 +11,6 @@ export { default as Sidebar } from "./layouts/Sidebar";
 export { default as CustomerOrderManager } from "./game/CustomerOrderManager";
 export { default as DeliveryForecast } from "./game/DeliveryForecast";
 export { default as GameControls } from "./game/GameControls";
-export { default as OrderProcessingGuide } from "./game/OrderProcessingGuide";
 export { default as PerformanceDashboard } from "./game/PerformanceDashboard";
 export { default as RandomEventsDisplay } from "./game/RandomEventsDisplay";
 
