@@ -194,6 +194,27 @@ export default function GameScreen() {
       return;
     }
 
+    // Enforce sequential processing: ensure all prior route steps are completed
+    const routeIndex = order.route.indexOf(departmentId);
+    if (routeIndex > 0) {
+      const priorSteps = order.route.slice(0, routeIndex);
+      const missingPrior = priorSteps.filter((id) => !completedDepartments.includes(id));
+      if (missingPrior.length > 0) {
+        const missingNames = missingPrior
+          .map((id) => {
+            const d = gameState.departments.find((dept) => dept.id === id);
+            return d ? d.name : `Dept ${id}`;
+          })
+          .join(" → ");
+
+        alert(
+          `⚠️ Order ${order.id} must complete previous steps before being assigned to ${department.name}.
+\nMissing completed steps: ${missingNames}`
+        );
+        return;
+      }
+    }
+
     // Check if Engineering (id=5) must be first and hasn't been completed yet
     const requiresEngineering = order.route.includes(5);
     const engineeringCompleted = completedDepartments.includes(5);
@@ -465,33 +486,16 @@ export default function GameScreen() {
             {/* Tab Content */}
             {activeOrderTab === "pending" && (
               <>
-                {/* Quick Actions removed — manual drag-only release enforced */}
+                {/* Instructions box */}
                 <div className="flex items-center justify-between mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-blue-900">
-                      Order Release
+                      Instructions
                     </p>
                     <p className="text-xs text-blue-700">
-                      Scheduled and pending orders must be started by dragging
-                      them onto a department. Automatic or batch release has
-                      been disabled to encourage student decision-making.
+                      Drag orders from the Pending list to the department where you want processing to start
                     </p>
                   </div>
-                </div>
-
-                <div className="text-sm text-gray-600 mb-3 space-y-1">
-                  <div>
-                    <strong>Instructions:</strong> Drag orders from the Pending
-                    list to the department where you want processing to start.
-                    Automatic release has been disabled.
-                  </div>
-                  {gameState.session.settings.manualMode && (
-                    <div className="text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
-                      <strong>Manual Mode:</strong> Drag orders to departments
-                      to assign them. Use the Start/Complete buttons inside the
-                      department panels to progress work.
-                    </div>
-                  )}
                 </div>
 
                 {/* Pending Orders Grid */}
@@ -1008,6 +1012,15 @@ export default function GameScreen() {
                 const blockedByEngineering =
                   requiresEngineering && !engineeringCompleted && dept.id !== 5;
 
+                // Check if any prior route steps are still incomplete for this dragged order
+                const routeIndex = draggedOrder ? draggedOrder.route.indexOf(dept.id) : -1;
+                const blockedByPrereq =
+                  routeIndex > 0 && draggedOrder
+                    ? draggedOrder.route
+                        .slice(0, routeIndex)
+                        .some((id) => !draggedOrder.timestamps.some((t) => t.deptId === id && t.end))
+                    : false;
+
                 return (
                   <div
                     key={dept.id}
@@ -1017,9 +1030,9 @@ export default function GameScreen() {
                       handleDropOnDepartment(dept.id);
                     }}
                     className={`bg-white rounded-xl p-6 shadow-sm border-2 transition-all duration-300 min-h-[380px] relative ${
-                      draggedOrder && (isCompleted || blockedByEngineering)
+                      draggedOrder && (isCompleted || blockedByEngineering || blockedByPrereq)
                         ? "border-gray-400 bg-gray-200 opacity-50 cursor-not-allowed"
-                        : draggedOrder && draggedOrder.route.includes(dept.id)
+                        : draggedOrder && draggedOrder.route.includes(dept.id) && !blockedByPrereq
                         ? "border-green-500 bg-green-50 shadow-lg scale-105 ring-2 ring-green-200"
                         : draggedOrder && !draggedOrder.route.includes(dept.id)
                         ? "border-red-300 bg-red-50 opacity-60"
@@ -1044,10 +1057,10 @@ export default function GameScreen() {
                           {/* dept.operatingTime in min, rounded to 1 decimal place */}
                           {Math.floor(dept.operatingTime / 60000 *10)/10} min processing time
                         </div>
-                        {blockedByEngineering && (
+                        {(blockedByEngineering || blockedByPrereq) && (
                           <div className="mt-2 flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-md border border-orange-300">
                             <span>🔧</span>
-                            <span>Awaiting Engineering approval</span>
+                            <span>{blockedByEngineering ? "Awaiting Engineering approval" : "Awaiting previous steps"}</span>
                           </div>
                         )}
                       </div>
