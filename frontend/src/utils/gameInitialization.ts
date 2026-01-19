@@ -575,7 +575,6 @@ export const createGameSession = (settings: GameSettings): GameSession => {
 
 // Initialize complete game state
 export const initializeGameState = (settings: GameSettings): GameState => {
-  const rng = new SeededRandom(settings.randomSeed);
   const session = createGameSession(settings);
   const departments = initializeDepartments(settings);
   // If using a predetermined level, prefer supplied scheduled orders (already normalized to ms)
