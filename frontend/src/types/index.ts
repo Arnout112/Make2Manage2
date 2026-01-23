@@ -2,10 +2,10 @@
 
 export interface Order {
   id: string;
-  customerId: string; // R01: Customer identification
-  customerName: string; // R01: Customer name for display
-  priority: "low" | "normal" | "high" | "urgent"; // R02: Priority levels
-  orderValue: number; // R02: Order value in currency
+  customerId: string;
+  customerName: string;
+  priority: "low" | "normal" | "high" | "urgent";
+  orderValue: number; // Order value in currency
   dueDate?: Date;
   // New: in-game due time measured in minutes from game start
   dueGameMinutes?: number;
@@ -33,9 +33,9 @@ export interface Order {
   currentDepartment?: number;
   currentOperationIndex?: number; // For tracking multi-step department operations
   operationProgress?: OperationProgress[]; // Track progress through department operations
-  specialInstructions?: string; // R03: Special handling requirements
-  rushOrder?: boolean; // R03: Rush order flag
-  scheduledStartTime?: Date; // R04-R05: Scheduled start time for capacity planning
+  specialInstructions?: string; // Special handling requirements
+  rushOrder?: boolean; // Rush order flag
+  scheduledStartTime?: Date; // Scheduled start time for capacity planning
   isHalfOrder?: boolean; // Half orders require only 50% of normal processing time
   halfOrderReason?:
     | "defect_repair"
@@ -129,13 +129,13 @@ export interface GameSession {
 }
 
 export interface GameSettings {
-  sessionDuration: 15 | 30 | 60; // minutes - R05: 15min, 30min, 1hr options
+  sessionDuration: 15 | 30 | 60; // minutes - 15min, 30min, 1hr options
   orderGenerationRate: "low" | "medium" | "high";
   complexityLevel: "beginner" | "intermediate" | "advanced";
   randomSeed?: string; // for reproducible scenarios
-  gameSpeed: 1 | 2 | 4 | 8; // Speed multiplier - R05: speed control
-  enableEvents: boolean; // R07: equipment failure, delivery delays
-  enableAdvancedRouting: boolean; // R06: advanced routing logic
+  gameSpeed: 1 | 2 | 4 | 8; // Speed multiplier - speed control
+  enableEvents: boolean; // equipment failure, delivery delays
+  enableAdvancedRouting: boolean; // advanced routing logic
   manualMode: boolean; // Educational mode: disable automatic processing, require student decisions
   difficultyPreset?: "easy" | "medium" | "hard"; // Simple difficulty presets
   // When true, the game will use the provided `predeterminedScheduledOrders`
@@ -162,13 +162,13 @@ export interface GameState {
   totalScore: number;
   gameEvents: GameEvent[];
   performance: GamePerformance;
-  sessionLog: SessionLog; // R12: Complete session logging
-  decisions: Decision[]; // R13: Decision history for undo/redo
-  forecastData: ForecastData; // R04: Delivery forecast based on WIP capacity
-  customers: Customer[]; // R01: Customer data management
+  sessionLog: SessionLog; // Complete session logging
+  decisions: Decision[]; // Decision history for undo/redo
+  forecastData: ForecastData; // Delivery forecast based on WIP capacity
+  customers: Customer[]; // Customer data management
 }
 
-// R04: Forecast for delivery dates based on current WIP capacity
+// Forecast for delivery dates based on current WIP capacity
 export interface ForecastData {
   averageLeadTime: number;
   capacityUtilization: number;
@@ -197,11 +197,11 @@ export interface GameEvent {
   severity: "info" | "warning" | "error" | "success";
   departmentId?: number;
   orderId?: string;
-  decisionId?: string; // R12: decision tracking
-  kpiSnapshot?: GamePerformance; // R12: KPI snapshot at event time
+  decisionId?: string; // decision tracking
+  kpiSnapshot?: GamePerformance; // KPI snapshot at event time
 }
 
-// R12: Session logging for CSV/JSON export
+// Session logging for CSV/JSON export
 export interface SessionLog {
   sessionId: string;
   startTime: Date;
@@ -212,7 +212,7 @@ export interface SessionLog {
   decisions: Decision[];
 }
 
-// R13: Decision tracking for undo/redo functionality
+// Decision tracking for undo/redo functionality
 export interface Decision {
   id: string;
   timestamp: Date;

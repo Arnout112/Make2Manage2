@@ -1,7 +1,7 @@
 import { Play, Download, ArrowLeft } from "lucide-react";
 import type { ScheduledOrder } from "../types";
-import level1 from "C:/Users/arnou/OneDrive/Documenten/GitHub/Make2Manage2/data/levels/level-1.json";
-import level2 from "C:/Users/arnou/OneDrive/Documenten/GitHub/Make2Manage2/data/levels/level-2.json";
+import level1 from "../../..//data/levels/level-1.json";
+import level2 from "../../../data/levels/level-2.json";
 import levelLoader from "../utils/levelLoader";
 
 interface LevelSelectScreenProps {
