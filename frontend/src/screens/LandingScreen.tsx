@@ -61,11 +61,11 @@ export default function LandingScreen({ onNavigate }: LandingScreenProps) {
 
           <div className="flex justify-center space-x-4">
             <button
-              onClick={() => onNavigate("game")}
+              onClick={() => onNavigate("level-select")}
               className="flex items-center space-x-2 bg-blue-600 text-white px-8 py-4 rounded-xl hover:bg-blue-700 transition-colors text-lg font-semibold shadow-lg"
             >
-              <Play size={24} />
-              <span>Start Game</span>
+              <Book size={24} />
+              <span>Level Select</span>
             </button>
 
             <button
@@ -74,14 +74,8 @@ export default function LandingScreen({ onNavigate }: LandingScreenProps) {
             >
               <BarChart3 size={24} />
               <span>View Analytics</span>
-            </button>
-            <button
-              onClick={() => onNavigate("level-select")}
-              className="flex items-center space-x-2 bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-4 rounded-xl hover:bg-indigo-50 transition-colors text-lg font-semibold"
-            >
-              <Book size={24} />
-              <span>Level Select</span>
-            </button>
+              </button>
+
           </div>
         </div>
       </div>

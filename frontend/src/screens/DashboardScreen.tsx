@@ -167,6 +167,7 @@ export default function DashboardScreen() {
               // After selecting a level, start the game in manual-game mode by default
               setActiveScreen("game");
             }}
+            onNavigate={(screen) => setActiveScreen(screen as any)}
           />
         );
       case "game":

@@ -7,9 +7,10 @@ import levelLoader from "../utils/levelLoader";
 interface LevelSelectScreenProps {
   onBack: () => void;
   onSelectLevel: (scheduledOrders: ScheduledOrder[]) => void;
+  onNavigate: (screen: string) => void;
 }
 
-export default function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelectScreenProps) {
+export default function LevelSelectScreen({ onBack, onSelectLevel, onNavigate }: LevelSelectScreenProps) {
   // For now a single example level 
   // TODO: extend and load from external source
   const exampleLevels = [
@@ -89,6 +90,72 @@ export default function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelect
               </div>
             </div>
           ))}
+
+          {/* Old generated level */}
+
+
+                      {/* <button
+              onClick={() => onNavigate("game")}
+              className="flex items-center space-x-2 bg-blue-600 text-white px-8 py-4 rounded-xl hover:bg-blue-700 transition-colors text-lg font-semibold shadow-lg"
+            >
+              <Play size={24} />
+              <span>Start Game</span>
+            </button> */}
+            <div key={0} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">Legacy level</h3>
+                  <p className="text-sm text-gray-600 mt-1">Old legacy level with autogenrated orders</p>
+                </div>
+                <div className="text-xs text-gray-500">level-0</div>
+              </div>
+
+              <div className="mt-4 border-t border-gray-100 pt-4 text-sm text-gray-600">
+                <div className="flex items-center justify-between">
+                  <div>Duration</div>
+                  <div>{`15 min`}</div>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <div>Difficulty</div>
+                  <div className="capitalize">medium</div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center gap-3">
+                <button
+                  onClick={() => onNavigate("game")}
+                  className="flex items-center gap-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Play size={16} />
+                  <span>Load level</span>
+                </button>
+                {/* <button
+                  onClick={() => handleSelect(lvl.data)}
+                  className="flex items-center gap-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Play size={16} />
+                  <span>Load Level</span>
+                </button> */}
+{/* 
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const blob = new Blob([JSON.stringify(lvl.data, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${lvl.data.id}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Download size={14} />
+                  <span>Download JSON</span>
+                </button> */}
+              </div>
+            </div>
+
         </div>
         <div className="fixed left-6 md:left-24 bottom-6 z-50">
           <button
