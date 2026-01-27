@@ -519,10 +519,15 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
                     ? "completed-late"
                     : "completed-on-time";
                 finalCompletedOrder.completedAt = now;
-                finalCompletedOrder.actualLeadTime = Math.floor(
-                  (now.getTime() - finalCompletedOrder.createdAt.getTime()) /
-                    (60 * 1000)
+                // Calculate actualLeadTime using game-time (in milliseconds)
+                const sessionStartMs = gameState.sessionLog?.startTime
+                  ? gameState.sessionLog.startTime.getTime()
+                  : Date.now();
+                const createdGameMs = Math.max(
+                  0,
+                  new Date(finalCompletedOrder.createdAt).getTime() - sessionStartMs
                 );
+                finalCompletedOrder.actualLeadTime = totalElapsedMs - createdGameMs;
                 completedOrders.push(finalCompletedOrder);
                 
                 events.push({
@@ -743,7 +748,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
           ? [...prevState.completedOrders, ...completedOrders].reduce(
               (sum, order) => sum + (order.actualLeadTime || 0),
               0
-            ) / totalCompleted
+            ) / totalCompleted / (60 * 1000)
           : 0;
 
       const utilizationRates = finalDepartments.reduce((acc, dept) => {
@@ -1222,9 +1227,16 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
               ? "completed-late"
               : "completed-on-time";
           finalCompletedOrder.completedAt = now;
-          finalCompletedOrder.actualLeadTime = Math.floor(
-            (now.getTime() - finalCompletedOrder.createdAt.getTime()) / (60 * 1000)
+          
+          // Calculate actualLeadTime using game-time (in milliseconds)
+          const sessionStartMs = prev.sessionLog?.startTime
+            ? prev.sessionLog.startTime.getTime()
+            : Date.now();
+          const createdGameMs = Math.max(
+            0,
+            new Date(finalCompletedOrder.createdAt).getTime() - sessionStartMs
           );
+          finalCompletedOrder.actualLeadTime = prev.session.elapsedTime - createdGameMs;
           updatedCompletedOrders.push(finalCompletedOrder);
         } else {
           // Move to next department - return to pending for manual assignment

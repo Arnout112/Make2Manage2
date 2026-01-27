@@ -205,7 +205,7 @@ export default function AnalyticsScreen() {
   // Helper to format lead time for an order (used in the Order Performance table)
   const formatLeadTime = (o: any) => {
     const src = o?.order || o;
-    if (src?.actualLeadTime) return `${src.actualLeadTime}m`;
+    if (src?.actualLeadTime) return `${Math.round(src.actualLeadTime / 60000)}m`;
     if (src?.completedAt && src?.createdAt) {
       const created = new Date(src.createdAt).getTime();
       const completedAt = new Date(src.completedAt).getTime();
@@ -389,7 +389,7 @@ export default function AnalyticsScreen() {
                                   {(o as any)?.priority?.toUpperCase() || 'NORMAL'}
                                 </span>
                               </td>
-                              <td className="py-2 text-gray-900">{formatLeadTime(o)}</td>
+                              <td className="py-2 text-gray-900">{o.actualLeadTime ? formatTime(o.actualLeadTime) : "--"}</td>
                               <td className="py-2">
                                 {o?.status === "completed-on-time" || o?.status === "completed-late" ? (
                                   <span className={`font-medium ${o.status === "completed-on-time" ? "text-green-600" : "text-amber-600"}`}>

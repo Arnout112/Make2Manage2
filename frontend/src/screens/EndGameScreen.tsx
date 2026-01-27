@@ -544,7 +544,7 @@ Make2Manage Leeromgeving`;
       ? completedOrders.reduce(
           (sum, order) => sum + (order.actualLeadTime || 0),
           0
-        ) / completedOrders.length
+        ) / completedOrders.length / (60 * 1000)
       : 0;
 
   const totalRevenue = gameState.totalScore;

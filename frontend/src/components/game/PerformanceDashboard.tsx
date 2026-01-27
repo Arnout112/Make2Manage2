@@ -110,7 +110,7 @@ export default function PerformanceDashboard({
     const avgLeadTime =
       completedOrders.length > 0
         ? completedOrders.reduce((sum, o) => sum + (o.actualLeadTime || 0), 0) /
-          completedOrders.length
+          completedOrders.length / (60 * 1000)
         : 0;
 
     const sessionTimeHours = gameState.session.elapsedTime

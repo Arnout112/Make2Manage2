@@ -688,7 +688,7 @@ export default function GameScreen() {
                                   {getPriorityLabel(order.priority)}
                                 </span>
                                 <span className="text-gray-600">
-                                  Lead: {order.actualLeadTime || 0}min
+                                  Lead: {order.actualLeadTime !== undefined && order.actualLeadTime !== null ? formatTime(order.actualLeadTime) : "--"}
                                 </span>
                               </div>
                               <span className="text-gray-600">
@@ -1587,8 +1587,8 @@ export default function GameScreen() {
                 <label className="text-sm font-medium text-gray-600 block mb-1">
                   Lead Time
                 </label>
-                <p className="text-lg">
-                  {selectedOrder.actualLeadTime || "--"} minutes
+                <p className="text-lg font-semibold text-gray-900">
+                  {selectedOrder.actualLeadTime !== undefined && selectedOrder.actualLeadTime !== null ? formatTime(selectedOrder.actualLeadTime) : "--"}
                 </p>
               </div>
             </div>
