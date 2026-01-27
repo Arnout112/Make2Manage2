@@ -207,7 +207,7 @@ export default function GameScreen() {
           })
           .join(" → ");
 
-        alert(
+        console.log(
           `⚠️ Order ${order.id} must complete previous steps before being assigned to ${department.name}.
 \nMissing completed steps: ${missingNames}`
         );
@@ -974,6 +974,45 @@ export default function GameScreen() {
                       })()}
                     </div>
                   )}
+
+                  {/* Enhanced Drag-and-Drop Overlay for Engineering */}
+                  {draggedOrder && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                      {(() => {
+                        // Find completed departments
+                        const completedDepts = draggedOrder.timestamps
+                          .filter((t) => t.end)
+                          .map((t) => t.deptId);
+                        
+                        // Find next department in route that hasn't been completed
+                        const nextDept = draggedOrder.route.find(
+                          (deptId) => !completedDepts.includes(deptId)
+                        );
+                        
+                        const isNextDept = eng.id === nextDept;
+
+                        if (isNextDept) {
+                          return (
+                            <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg text-center animate-pulse">
+                              <div className="font-bold text-lg">✓ Drop Here</div>
+                              <div className="text-sm">
+                                Valid department for {draggedOrder.id}
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg text-center">
+                              <div className="font-bold text-lg">✗ Invalid</div>
+                              <div className="text-sm">
+                                {draggedOrder.id} cannot go here
+                              </div>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -1413,21 +1452,39 @@ export default function GameScreen() {
                     {/* Enhanced Drag-and-Drop Overlay */}
                     {draggedOrder && (
                       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                        {draggedOrder.route.includes(dept.id) ? (
-                          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg text-center animate-pulse">
-                            <div className="font-bold text-lg">✓ Drop Here</div>
-                            <div className="text-sm">
-                              Valid department for {draggedOrder.id}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg text-center">
-                            <div className="font-bold text-lg">✗ Invalid</div>
-                            <div className="text-sm">
-                              {draggedOrder.id} cannot go here
-                            </div>
-                          </div>
-                        )}
+                        {(() => {
+                          // Find completed departments
+                          const completedDepts = draggedOrder.timestamps
+                            .filter((t) => t.end)
+                            .map((t) => t.deptId);
+                          
+                          // Find next department in route that hasn't been completed
+                          const nextDept = draggedOrder.route.find(
+                            (deptId) => !completedDepts.includes(deptId)
+                          );
+                          
+                          const isNextDept = dept.id === nextDept;
+
+                          if (isNextDept) {
+                            return (
+                              <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg text-center animate-pulse">
+                                <div className="font-bold text-lg">✓ Drop Here</div>
+                                <div className="text-sm">
+                                  Valid department for {draggedOrder.id}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg text-center">
+                                <div className="font-bold text-lg">✗ Invalid</div>
+                                <div className="text-sm">
+                                  {draggedOrder.id} cannot go here
+                                </div>
+                              </div>
+                            );
+                          }
+                        })()}
                       </div>
                     )}
                   </div>
