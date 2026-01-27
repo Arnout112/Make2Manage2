@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Factory,
 } from "lucide-react";
+import { formatTime } from "../../utils/timeFormat";
 import type { GameState } from "../../types";
 
 interface PerformanceDashboardProps {
@@ -501,8 +502,9 @@ export default function PerformanceDashboard({
                     {getTrendIcon(metric.trend)}
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    {metric.value.toFixed(1)}
-                    {metric.unit}
+                    {metric.id === "lead-time"
+                      ? formatTime(metric.value * 60 * 1000)
+                      : `${metric.value.toFixed(1)}${metric.unit}`}
                   </div>
                   <div className="text-xs opacity-80">
                     Target: {metric.target}
@@ -566,7 +568,7 @@ export default function PerformanceDashboard({
                       <div>
                         <p className="text-black">Cycle Time</p>
                         <p className="font-semibold">
-                          {(dept.operatingTime/60000).toFixed(1)} m
+                          {formatTime(dept.operatingTime)}
                         </p>
                       </div>
                     </div>

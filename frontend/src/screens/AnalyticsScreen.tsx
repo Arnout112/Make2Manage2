@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Clock, CheckCircle, Factory, AlertTriangle } from "lucide-react";
 import { useSharedGameState } from "../contexts/GameStateContext";
 import { PerformanceDashboard } from "../components";
+import { formatTime } from "../utils/timeFormat";
 
 export default function AnalyticsScreen() {
   // Use shared game state for performance data with error handling
@@ -109,27 +110,27 @@ export default function AnalyticsScreen() {
       (o) => o.completedAt || o.status?.toString().startsWith("completed")
     );
 
-    // Avg lead time in hours (completed - created)
-    const leadTimesHours = completed
+    // Avg lead time in milliseconds (completed - created)
+    const leadTimes = completed
       .map((o) => {
         try {
           const created = new Date(o.createdAt).getTime();
           const completedAt = o.completedAt ? new Date(o.completedAt).getTime() : NaN;
           if (isNaN(created) || isNaN(completedAt)) return NaN;
-          return (completedAt - created) / (1000 * 60 * 60);
+          return completedAt - created;
         } catch {
           return NaN;
         }
       })
       .filter((v) => !isNaN(v));
 
-    const avgLeadTimeHours =
-      leadTimesHours.length > 0
-        ? leadTimesHours.reduce((s, v) => s + v, 0) / leadTimesHours.length
+    const avgLeadTimeMs =
+      leadTimes.length > 0
+        ? leadTimes.reduce((s, v) => s + v, 0) / leadTimes.length
         : NaN;
 
-    const avgLeadTimeLabel = !isNaN(avgLeadTimeHours)
-      ? `${avgLeadTimeHours.toFixed(1)}h`
+    const avgLeadTimeLabel = !isNaN(avgLeadTimeMs)
+      ? formatTime(avgLeadTimeMs)
       : "-";
 
     // On-time % (of completed orders)

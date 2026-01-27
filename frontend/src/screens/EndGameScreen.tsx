@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useSharedGameState } from "../contexts/GameStateContext";
 import { formatCurrency } from "../utils/formatters";
+import { formatTime } from "../utils/timeFormat";
 import { ExportModal } from "../components";
 
 const EndGameScreen: React.FC = () => {
@@ -24,12 +25,6 @@ const EndGameScreen: React.FC = () => {
     teacherEmail: "",
     courseName: "",
   });
-
-  // Helper to format lead time in minutes
-  const formatLeadTime = (minutes: number) => {
-    if (minutes === 0) return "0m";
-    return `${Math.round(minutes)}m`;
-  };
 
   // Export data to CSV
   const exportToCSV = () => {
@@ -44,7 +39,7 @@ const EndGameScreen: React.FC = () => {
       [""],
       ["Key Performance Indicators"],
       ["On-Time Delivery Rate:", `${onTimeRate.toFixed(1)}%`],
-      ["Average Lead Time:", formatLeadTime(averageLeadTime)],
+      ["Average Lead Time:", formatTime(averageLeadTime * 60 * 1000)],
       ["Average Utilization:", `${averageUtilization.toFixed(1)}%`],
       ["Average Order Value:", formatCurrency(averageOrderValue)],
       [""],
@@ -68,7 +63,7 @@ const EndGameScreen: React.FC = () => {
       ],
       [
         "Lead Time",
-        formatLeadTime(averageLeadTime),
+        formatTime(averageLeadTime * 60 * 1000),
         `${benchmarks.industryStandards.leadTime.excellent}m`,
         `${benchmarks.competitorAverages.leadTime}m`,
         getBenchmarkStatus(
@@ -215,8 +210,8 @@ const EndGameScreen: React.FC = () => {
             
             <div class="stat-card">
                 <div class="stat-label">Gemiddelde Doorlooptijd</div>
-                <div class="stat-value" style="color: #7c3aed;">${formatLeadTime(
-                  averageLeadTime
+                <div class="stat-value" style="color: #7c3aed;">${formatTime(
+                  averageLeadTime * 60 * 1000
                 )}</div>
                 <div class="benchmark ${
                   getBenchmarkStatus(
@@ -375,7 +370,7 @@ const EndGameScreen: React.FC = () => {
                 </tr>
                 <tr>
                     <td>Doorlooptijd</td>
-                    <td>${formatLeadTime(averageLeadTime)}</td>
+                    <td>${formatTime(averageLeadTime * 60 * 1000)}</td>
                     <td>${benchmarks.industryStandards.leadTime.excellent}m</td>
                     <td>${benchmarks.competitorAverages.leadTime}m</td>
                     <td><span class="benchmark ${
@@ -459,7 +454,7 @@ PRESTATIE OVERZICHT:
 - Op-tijd Levering: ${onTimeRate.toFixed(1)}% (target: ${
       benchmarks.industryStandards.onTimeDeliveryRate.excellent
     }%)
-- Gemiddelde Doorlooptijd: ${formatLeadTime(averageLeadTime)} (target: ${
+- Gemiddelde Doorlooptijd: ${formatTime(averageLeadTime * 60 * 1000)} (target: ${
       benchmarks.industryStandards.leadTime.excellent
     }m)
 - Gemiddelde Bezetting: ${averageUtilization.toFixed(1)}% (target: ${
@@ -529,9 +524,20 @@ Make2Manage Leeromgeving`;
     (order) => order.status === "completed-on-time"
   );
 
+  // Include all orders (completed + pending + in-process) for true on-time rate
+  const allOrders = [
+    ...gameState.completedOrders,
+    ...gameState.pendingOrders,
+    ...gameState.departments.flatMap(d => d.queue),
+    ...gameState.departments.map(d => d.inProcess).filter((o): o is any => o !== null && o !== undefined),
+  ];
+  
+  // Remove duplicates based on order ID
+  const uniqueOrders = Array.from(new Map(allOrders.map(o => [o.id, o])).values());
+
   const onTimeRate =
-    completedOrders.length > 0
-      ? (onTimeOrders.length / completedOrders.length) * 100
+    uniqueOrders.length > 0
+      ? (onTimeOrders.length / uniqueOrders.length) * 100
       : 0;
   const averageLeadTime =
     completedOrders.length > 0
@@ -734,7 +740,7 @@ Make2Manage Leeromgeving`;
                 ).color
               }`}
             >
-              {formatLeadTime(averageLeadTime)}
+              {formatTime(averageLeadTime * 60 * 1000)}
             </div>
             <div className="text-sm text-gray-600">Average processing time</div>
             <div className="text-xs text-gray-500">
