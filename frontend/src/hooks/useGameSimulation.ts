@@ -354,6 +354,28 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
               departmentId: dept.id,
             });
           }
+        } else if (updatedDept.queue.length > 0 && updatedDept.queue[0].status !== "on-hold") {
+          // Auto-start next order in queue when department is idle (but not if it's on-hold)
+          const nextOrder = updatedDept.queue[0];
+          const perDeptMs = (nextOrder as any).perDeptProcessingTimes?.[dept.id];
+          const processingTime = perDeptMs ?? nextOrder.processingTime ?? calculateProcessingTime(nextOrder, updatedDept);
+
+          updatedDept.inProcess = {
+            ...nextOrder,
+            status: "processing" as const,
+            processingTime,
+            processingTimeRemaining: processingTime,
+            currentOperationIndex: 0,
+            operationProgress: updatedDept.operations.length > 0 ? [{
+              operationId: updatedDept.operations[0].id,
+              operationName: updatedDept.operations[0].name,
+              startTime: new Date(),
+              duration: updatedDept.operations[0].duration,
+              completed: false,
+            }] : [],
+            timestamps: [...nextOrder.timestamps, { deptId: dept.id, start: new Date() }],
+          };
+          updatedDept.queue = updatedDept.queue.slice(1);
         }
 
         // Update department status based on manual activity
@@ -381,7 +403,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
 
       return { updatedDepartments, completedOrders: [], events };
     },
-    []
+    [calculateProcessingTime]
   );
 
   // Process department operations
@@ -1280,7 +1302,7 @@ export const useGameSimulation = (initialSettings: GameSettings) => {
             return {
               ...d,
               inProcess: undefined,
-              queue: [...d.queue, heldOrder],
+              queue: [heldOrder, ...d.queue],
               utilization: d.queue.length > 0 ? 75 : 0,
               status: d.queue.length > 0 ? "available" : ("available" as const),
             };
