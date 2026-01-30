@@ -15,6 +15,7 @@ import AnalyticsScreen from "./AnalyticsScreen";
 import GameScreen from "./GameScreen";
 import EndGameScreen from "./EndGameScreen";
 import LevelSelectScreen from "./LevelSelectScreen";
+import ScoreboardScreen from "./ScoreboardScreen";
 import type { ScreenType, GameSettings } from "../types";
 
 // Component to monitor game completion and handle automatic navigation
@@ -149,6 +150,11 @@ export default function DashboardScreen() {
           title: "Game Complete",
           subtitle: "Final Results & Performance Summary",
         };
+      case "scoreboard":
+        return {
+          title: "Leaderboard",
+          subtitle: "View player rankings and scores",
+        };
       default:
         return { title: "Make2Manage", subtitle: "Digital Learning Game" };
     }
@@ -174,6 +180,8 @@ export default function DashboardScreen() {
         return <GameScreen />;
       case "analytics":
         return <AnalyticsScreen />;
+      case "scoreboard":
+        return <ScoreboardScreen onNavigate={handleNavigationChange} />;
       case "end-game":
         return <EndGameScreen />;
       default:

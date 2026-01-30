@@ -1,4 +1,4 @@
-import { Factory, BarChart3, Users, Target, Book, Play } from "lucide-react";
+import { Factory, BarChart3, Users, Target, Book, Play, Trophy } from "lucide-react";
 import type { ScreenType } from "../types";
 
 interface LandingScreenProps {
@@ -74,8 +74,15 @@ export default function LandingScreen({ onNavigate }: LandingScreenProps) {
             >
               <BarChart3 size={24} />
               <span>View Analytics</span>
-              </button>
+            </button>
 
+            <button
+              onClick={() => onNavigate("scoreboard")}
+              className="flex items-center space-x-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-8 py-4 rounded-xl hover:from-yellow-500 hover:to-yellow-700 transition-colors text-lg font-semibold shadow-lg"
+            >
+              <Trophy size={24} />
+              <span>Leaderboard</span>
+            </button>
           </div>
         </div>
       </div>

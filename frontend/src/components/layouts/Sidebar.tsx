@@ -1,4 +1,4 @@
-import { Factory, BarChart3 } from "lucide-react";
+import { Factory, BarChart3, Trophy } from "lucide-react";
 import type { ScreenType, NavigationScreen } from "../../types";
 
 interface SidebarProps {
@@ -16,6 +16,11 @@ export default function Sidebar({
       id: "analytics" as NavigationScreen,
       icon: BarChart3,
       title: "Analytics",
+    },
+    {
+      id: "scoreboard" as NavigationScreen,
+      icon: Trophy,
+      title: "Scoreboard",
     },
   ];
 

@@ -114,7 +114,8 @@ export type ScreenType =
   | "game"
   | "analytics"
   | "manual-game"
-  | "end-game";
+  | "end-game"
+  | "scoreboard";
 export type NavigationScreen = "game" | "analytics" | "manual-game" | "end-game";
 
 // Game Session Management
